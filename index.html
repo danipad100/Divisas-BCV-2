@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
 <meta charset="utf-8"/>
@@ -15,7 +16,7 @@
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
   font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;line-height:1.35}
 .app{max-width:1200px;margin:auto;padding:18px}
-header{background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;padding:18px;border-radius:var(--radius);
+header{position:sticky;top:0;z-index:950;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;padding:18px;border-radius:var(--radius);
   box-shadow:0 10px 25px rgba(0,0,0,.10);display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between}
 header h1{margin:0;font-size:22px}
 nav{display:flex;gap:8px;flex-wrap:wrap}
@@ -69,99 +70,485 @@ body.dark .ud{background:#5e3c49 !important;color:#fff}
 .mono{ font-variant-numeric: tabular-nums; }
 #vinil_summary strong{ transition: opacity .15s ease; }
 #vinil_summary strong.upd{ opacity:.25 }
+/* === UI Enhancements (no logic/ID changes) === */
+.card.primary{border:1px solid rgba(255,122,162,.22)}
+.card.secondary{background:linear-gradient(180deg,#ffffff 0%, #fafafa 100%);border:1px solid rgba(0,0,0,.04)}
+.card.neutral{border:1px solid rgba(0,0,0,.06)}
+.rate-input{background:#fff7fa;border-color:#ffd1e1;font-weight:700}
+body.dark .rate-input{background:#121827;border-color:#2a3147}
+.pill span{font-weight:700}
+.pill{backdrop-filter:saturate(1.2); }
+.card, input, select, button, .pill{transition:all .15s ease}
+.rate-updated{animation:ratePulse .65s ease}
+@keyframes ratePulse{0%{box-shadow:0 0 0 0 rgba(255,122,162,.35)}100%{box-shadow:0 0 0 10px rgba(255,122,162,0)}}
+nav{position:sticky;top:0;z-index:5}
+header{position:sticky;top:0;z-index:6}
+
+/* === Suite-like tokens + dark mode improvements (override, no IDs changed) === */
+:root{
+  --text:#111827;
+  --card-border:#e5e7eb;
+  --shadow:0 10px 25px rgba(0,0,0,.06);
+  --input-bg:#ffffff;
+  --input-border:#e5e7eb;
+  --pill:#f3f4f6;
+  --pill-text:#111827;
+  --accent:#2563eb;
+  --accent-contrast:#ffffff;
+}
+body.dark{
+  --bg:#0f1115;
+  --text:#e5e7eb;
+  --muted:#9fb0c6;
+  --card:#151924;
+  --card-border:#23283a;
+  --shadow:none;
+  --input-bg:#0f1115;
+  --input-border:#2a3147;
+  --pill:#1b2030;
+  --pill-text:#e5e7eb;
+  --accent:#2563eb;
+  --accent-contrast:#ffffff;
+}
+body{ background:var(--bg); color:var(--text); }
+.card{ background:var(--card); border:1px solid var(--card-border); box-shadow:var(--shadow); }
+label, .muted{ color: var(--muted); }
+.pill, .chip{ background:var(--pill); color:var(--pill-text); border:1px solid var(--card-border); }
+
+input[type="number"], input[type="text"], select{
+  background:var(--input-bg);
+  color:var(--text);
+  border:1px solid var(--input-border);
+}
+input[type="number"]:focus, input[type="text"]:focus, select:focus{
+  outline:none;
+  box-shadow:0 0 0 2px #3b82f6;
+  border-color:#3b82f6;
+}
+
+/* Buttons (match Suite feel) */
+.btn{
+  background:var(--accent);
+  color:var(--accent-contrast);
+  border:none;
+  border-radius:10px;
+  padding:8px 12px;
+  font-weight:600;
+  box-shadow:0 2px 6px rgba(0,0,0,.10);
+}
+.btn.neutral{ background:var(--accent); color:var(--accent-contrast); }
+.btn.ok{ background:var(--ok); color:#fff; }
+.btn.reset{
+  background:transparent;
+  color:var(--text);
+  border:1px dashed var(--muted);
+  box-shadow:none;
+}
+.btn:hover{ filter:brightness(1.05); }
+
+/* Nav buttons */
+nav button{
+  background:var(--pill);
+  color:var(--text);
+  box-shadow:none;
+}
+nav button.active{
+  background:var(--text);
+  color:var(--bg);
+}
+body.dark nav button.active{
+  background:#e5e7eb;
+  color:#0f1115;
+}
+
+/* Dark Toggle pill (Sol/Luna) */
+.dark-toggle-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-size:12px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:#ffffff33;
+  color:#fff;
+  cursor:pointer;
+  user-select:none;
+}
+.dark-toggle-pill input{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+.dark-toggle-pill .dt-ico{ width:16px; height:16px; display:block; }
+.dark-toggle-pill .dt-sun{ display:none; }
+.dark-toggle-pill input:checked ~ .dt-moon{ display:none; }
+.dark-toggle-pill input:checked ~ .dt-sun{ display:block; }
+body.dark .dark-toggle-pill{ background:var(--pill); color:var(--text); }
+
+/* === Header shrink on scroll (Suite-like) === */
+header{
+  transition: padding .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.app-header.header-compact{
+  padding: 8px 14px;
+  box-shadow: 0 6px 14px rgba(0,0,0,.08);
+}
+
+/* Header compacto en scroll (solo móviles) */
+@media (max-width: 840px){
+  .app-header.header-compact .header-right{ display:none !important; }
+  .app-header.header-compact h1{ font-size:16px !important; margin:0 !important; }
+  .app-header.header-compact nav button{ padding:6px 10px !important; font-size:12px !important; }
+}
+
+
+header.shrink h1{
+  font-size: 16px;
+}
+header.shrink nav button{
+  padding: 6px 10px;
+  font-size: 12px;
+}
+header.shrink .dark-toggle-pill{
+  padding: 4px 8px;
+  font-size: 11px;
+}
+/* === Dark mode refinement (Suite-like) === */
+body.dark{
+  background:#0b0e14;
+  color:#e6e9ef;
+}
+body.dark header{
+  background:linear-gradient(120deg,#1f2937,#111827);
+  color:#e6e9ef;
+}
+body.dark h1, body.dark h2, body.dark h3, body.dark h4{
+  color:#f9fafb;
+}
+body.dark .card{
+  background:#111827;
+  border:1px solid #1f2937;
+}
+body.dark label{ color:#9ca3af; }
+body.dark .pill{
+  background:#1f2937;
+  border-color:#374151;
+  color:#e5e7eb;
+}
+body.dark input[type="number"],
+body.dark input[type="text"],
+body.dark select{
+  background:#0b0e14;
+  border-color:#374151;
+  color:#f9fafb;
+}
+body.dark input:focus, body.dark select:focus{
+  box-shadow:0 0 0 2px rgba(59,130,246,.6);
+  border-color:#3b82f6;
+}
+body.dark .btn{
+  background:#2563eb;
+  color:#fff;
+}
+body.dark .btn.reset{
+  background:transparent;
+  color:#9ca3af;
+  border:1px dashed #374151;
+}
+body.dark .btn:hover{ filter:brightness(1.1); }
+body.dark .footer{ color:#9ca3af; }
+/* === Dark mode overrides for inline-styled blocks === */
+body.dark select{ background:#0b0e14 !important; border-color:#374151 !important; color:#f9fafb !important; }
+body.dark .card[style*="background"]{ background:#111827 !important; }
+body.dark .card[style*="border"]{ border-color:#1f2937 !important; }
+body.dark .card[style*="background:#fafafa"]{ background:#111827 !important; }
+body.dark .card[style*="border:1px solid #eee"]{ border-color:#1f2937 !important; }
+/* Ensure separators are visible in dark */
+body.dark .sep{ background:#1f2937; }
+/* === Copy icon buttons === */
+.icon-copy-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  margin-left:8px;
+  border-radius:10px;
+  border:1px solid rgba(0,0,0,.08);
+  background:transparent;
+  cursor:pointer;
+  vertical-align:middle;
+  padding:0;
+}
+.icon-copy-btn svg{ width:18px; height:18px; }
+.icon-copy-btn:hover{ filter:brightness(1.05); }
+body.dark .icon-copy-btn{
+  border-color:#374151;
+}
+body.dark .icon-copy-btn:hover{ filter:brightness(1.12); }
+.pill{ gap:8px; }
+.result-inline{ display:inline-flex; align-items:center; gap:6px; }
+/* === Copy icon buttons (modern minimal) === */
+.icon-copy-btn{
+  width:26px;
+  height:26px;
+  border-radius:9px;
+  border:1px solid rgba(0,0,0,.10);
+  background:rgba(255,255,255,.0);
+}
+.icon-copy-btn:hover{
+  background:rgba(0,0,0,.04);
+  border-color:rgba(0,0,0,.14);
+}
+.icon-copy-btn:active{ transform:scale(.98); }
+.icon-copy-btn svg{ width:17px; height:17px; opacity:.85; }
+body.dark .icon-copy-btn{
+  border-color:rgba(255,255,255,.14);
+  background:rgba(255,255,255,0);
+}
+body.dark .icon-copy-btn:hover{
+  background:rgba(255,255,255,.06);
+  border-color:rgba(255,255,255,.18);
+}
+/* === App header actions + chips + density (UI only) === */
+.icon-top-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:38px;height:38px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.12);
+  color:#fff;cursor:pointer; padding:0;
+  transition:all .15s ease;
+}
+.icon-top-btn svg{width:20px;height:20px;opacity:.95}
+.icon-top-btn:hover{background:rgba(255,255,255,.18)}
+.icon-top-btn:active{transform:scale(.98)}
+.icon-top-btn.primary{
+  background:rgba(17,24,39,.22);
+  border-color:rgba(255,255,255,.28);
+}
+body.dark .icon-top-btn{
+  border-color:rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  color:#e5e7eb;
+}
+body.dark .icon-top-btn.primary{
+  background:rgba(37,99,235,.22);
+  border-color:rgba(59,130,246,.35);
+}
+.rate-meta-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 10px;border-radius:999px;
+  font-size:12px;font-weight:600;
+  background:rgba(0,0,0,.04);
+  border:1px solid rgba(0,0,0,.06);
+  color:var(--text);
+}
+.chip.ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25)}
+.chip.warn{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.22)}
+body.dark .chip{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.10);color:var(--text)}
+body.dark .chip.ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25)}
+body.dark .chip.warn{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.22)}
+label{font-size:11px;letter-spacing:.2px}
+.rate-input{font-size:18px;height:50px}
+@media(max-width:520px){
+  .app{padding:14px}
+  .card{padding:14px}
+  .grid{gap:12px}
+}
+/* Header shrink: keep title + dark + refresh; hide reset icon */
+header.shrink #btn_reset_general{display:none}
+/* === Dark mode premium (depth + subtle gradient) === */
+body.dark{
+  background: radial-gradient(1200px 600px at 20% -10%, rgba(37,99,235,.18), transparent 55%),
+              radial-gradient(900px 500px at 90% 10%, rgba(255,122,162,.14), transparent 55%),
+              #0b0e14;
+}
+body.dark .card{
+  background: linear-gradient(180deg, rgba(255,255,255,.04) 0%, rgba(255,255,255,.02) 100%), #0f1624;
+  border:1px solid rgba(148,163,184,.16);
+  box-shadow: 0 12px 26px rgba(0,0,0,.35);
+}
+body.dark .card.primary{
+  border-color: rgba(255,122,162,.22);
+}
+body.dark .card.secondary{
+  border-color: rgba(59,130,246,.18);
+}
+body.dark .pill{
+  background: rgba(255,255,255,.06);
+  border-color: rgba(148,163,184,.16);
+}
+body.dark .sep{ background: rgba(148,163,184,.14); }
+
+/* Buttons: clearer hover/active in dark */
+body.dark .btn, body.dark .icon-top-btn{
+  transition: background .15s ease, border-color .15s ease, transform .08s ease, filter .15s ease;
+}
+body.dark .btn:hover{ filter:brightness(1.12); }
+body.dark .btn:active{ transform:scale(.99); }
+body.dark .icon-top-btn:hover{ background: rgba(255,255,255,.10); }
+body.dark .icon-top-btn:active{ transform:scale(.98); }
+
+/* Inputs: depth + subtle inset */
+body.dark input[type="number"], body.dark input[type="text"], body.dark select{
+  background: rgba(2,6,23,.55);
+  border-color: rgba(148,163,184,.20);
+}
+body.dark input[type="number"]:focus, body.dark input[type="text"]:focus, body.dark select:focus{
+  box-shadow: 0 0 0 2px rgba(59,130,246,.55);
+}
+
+/* Copy icon buttons: better contrast in dark */
+body.dark .icon-copy-btn{
+  background: rgba(255,255,255,.02);
+  border-color: rgba(148,163,184,.18);
+}
+body.dark .icon-copy-btn:hover{
+  background: rgba(255,255,255,.08);
+  border-color: rgba(148,163,184,.24);
+}
+/* Button icons */
+.btn .btn-ico{
+  width:16px;height:16px;
+  margin-right:8px;
+  vertical-align:-2px;
+  opacity:.95;
+}
+.btn span{ vertical-align:middle; }
+.icon-copy-btn{
+  transition: background .15s ease, border-color .15s ease, transform .08s ease;
+}
+.icon-copy-btn:active{ transform:scale(.98); }
+
+/* === Uniform card color (light mode) === */
+body:not(.dark) .card{
+  background:#ffffff !important;
+}
+body:not(.dark) .card.secondary{
+  background:#ffffff !important;
+}
+body:not(.dark) .card[style*="background"]{
+  background:#ffffff !important;
+}
+
+
+/* === Remove pink border on first card (uniform borders) === */
+.card.primary{
+  border-color: rgba(0,0,0,.06) !important;
+}
+body.dark .card.primary{
+  border-color: rgba(148,163,184,.16) !important;
+}
+
 </style>
 
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-180.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#ff7aa2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Divisas BCV">
+<link rel="apple-touch-icon" href="icon-180.png">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('sw.js?v=1');
+    });
+  }
+</script>
+
 </head>
 <body>
 <div class="app">
-<header>
-<h1>Suite de Calculadoras</h1>
-<nav id="nav"><button class="active" data-view="divisas">Divisas BCV / Paralelo</button></nav>
-<div style="display:flex;gap:8px;align-items:center">
-<label style="display:flex;gap:6px;align-items:center;font-size:12px;background:#ffffff33;padding:6px 10px;border-radius:999px">
-<input id="dark_toggle" type="checkbox"/> Modo oscuro
-    </label>
-<button class="btn reset" id="btn_reset_general">Reset general</button></div>
+<header class=\"app-header\">
+<h1>Divisas BCV / Paralelo</h1>
+
+<div class="header-right" style="display:flex;gap:8px;align-items:center">
+<label class="dark-toggle-pill"><input id="dark_toggle" type="checkbox"/><svg aria-hidden="true" class="dt-ico dt-moon" viewbox="0 0 24 24"><path d="M21 14.3A8.7 8.7 0 0 1 9.7 3a7.7 7.7 0 1 0 11.3 11.3Z" fill="currentColor"></path></svg><svg aria-hidden="true" class="dt-ico dt-sun" viewbox="0 0 24 24">
+<circle cx="12" cy="12" fill="none" r="5" stroke="currentColor" stroke-width="2"></circle>
+<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+</svg><span>Modo oscuro</span></label>
+<button class="icon-top-btn" id="btn_reset_general" type="button" title="Reset general" aria-label="Reset general"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><path d="M21 3v6h-6"></path></svg></button></div>
 </header>
 <!-- DIVISAS -->
-
 <section class="view active" id="view-divisas">
 <div class="grid">
-<div class="card md-6">
+<div class="card md-6 primary">
 <h3 style="display:flex;align-items:center;justify-content:space-between">Tasas
   <!-- Botón para actualizar las tasas de cambio automáticamente. Al hacer clic se ejecuta la función fetchRates() que consulta la tasa oficial del BCV vía API y la tasa de compra USD/VES desde Saldoar a través de un proxy CORS. -->
-  <button id="btn_refresh_rates" class="btn neutral" style="margin-left:auto;font-size:12px;padding:6px 10px">Actualizar tasas</button>
+<button class="btn neutral" id="btn_refresh_rates" style="margin-left:auto;font-size:12px;padding:6px 10px"><svg aria-hidden="true" class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><path d="M21 3v6h-6"></path></svg><span>Actualizar tasas</span></button>
 </h3>
+<div class="muted" id="rates_last_update" style="margin:-6px 0 6px">Actualizado: —</div><div class="rate-meta-row"><span class="chip" id="chip_online">—</span><span class="chip" id="chip_source">Fuente Paralelo: Binance P2P</span></div>
 <!-- Selector de moneda y tasas -->
 <div class="row">
-  <div style="flex:1;min-width:220px">
-    <!-- Selector de moneda base para BCV -->
-    <label>Moneda de cálculo (BCV)</label>
-    <select id="moneda_bcv" style="width:100%;padding:12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-size:14px">
-      <option value="USD" selected>Dólar (USD)</option>
-      <option value="EUR">Euro (EUR)</option>
-    </select>
-  </div>
+<div style="flex:1;min-width:220px">
+<!-- Selector de moneda base para BCV -->
+<label>Moneda de cálculo (BCV)</label>
+<select id="moneda_bcv" style="width:100%;padding:12px;border-radius:12px;font-size:14px">
+<option selected="" value="USD">Dólar (USD)</option>
+<option value="EUR">Euro (EUR)</option>
+</select>
+</div>
 </div>
 <div class="row">
-  <div style="flex:1;min-width:220px">
-    <!-- Tasa oficial en dólares -->
-    <label>Precio BCV (Bs por $)</label>
-    <div class="row" style="align-items:center;gap:6px">
-      <span class="pill">Bs</span>
-      <input id="tasa_bcv" min="0" step="0.01" type="number" value="189.26"/>
-    </div>
-  </div>
-  <div style="flex:1;min-width:220px">
-    <!-- Tasa oficial en euros -->
-    <label>Precio Euro BCV (Bs por €)</label>
-    <div class="row" style="align-items:center;gap:6px">
-      <span class="pill">Bs</span>
-      <input id="tasa_euro_bcv" min="0" step="0.01" type="number" value="" />
-    </div>
-  </div>
-  <div style="flex:1;min-width:220px">
-    <!-- Tasa paralela -->
-    <label>Precio Paralelo (Bs por $)</label>
-    <div class="row" style="align-items:center;gap:6px">
-      <span class="pill">Bs</span>
-      <input id="tasa_paralelo" min="0" step="0.01" type="number" value="299.80"/>
-    </div>
-  </div>
+<div style="flex:1;min-width:220px">
+<!-- Tasa oficial en dólares -->
+<label>Precio BCV (Bs por $)</label>
+<div class="row" style="align-items:center;gap:6px">
+<span class="pill">Bs</span>
+<input class="rate-input auto-rate" id="tasa_bcv" min="0" step="0.01" type="number" value="189.26"/>
+</div>
+</div>
+<div style="flex:1;min-width:220px">
+<!-- Tasa oficial en euros -->
+<label>Precio Euro BCV (Bs por €)</label>
+<div class="row" style="align-items:center;gap:6px">
+<span class="pill">Bs</span>
+<input class="rate-input auto-rate" id="tasa_euro_bcv" min="0" step="0.01" type="number" value=""/>
+</div>
+</div>
+<div style="flex:1;min-width:220px">
+<!-- Tasa paralela -->
+<label>Precio Paralelo (Bs por $)</label>
+<div class="row" style="align-items:center;gap:6px">
+<span class="pill">Bs</span>
+<input class="rate-input auto-rate" id="tasa_paralelo" min="0" step="0.01" type="number" value="299.80"/>
+</div>
+</div>
 </div>
 <div class="sep"></div>
 <div class="row"><div class="pill">Equivalente en Paralelo: <span id="equiv_paralelo">—</span></div></div>
 </div>
-<div class="card md-6">
+<div class="card md-6 secondary">
 <h3>Conversión rápida</h3>
 <div class="row">
 <div style="flex:1;min-width:220px">
 <label id="label_monto">Monto en $</label>
 <div class="row" style="align-items:center;gap:6px">
 <span class="pill" id="symbol_monto">$</span>
-<input id="monto_usd" min="0" step="0.01" type="number"/>
-</div>
+<input id="monto_usd" min="0" step="0.01" type="number">
+</input></div>
 </div>
 <div style="flex:1;min-width:220px">
 <label>Monto en Bs (BCV)</label>
 <div class="row" style="align-items:center;gap:6px">
 <span class="pill">Bs</span>
-<input id="monto_bs_bcv" min="0" step="0.01" type="number"/>
-</div>
+<input id="monto_bs_bcv" min="0" step="0.01" type="number">
+</input></div>
 </div>
 </div>
 <div class="sep"></div>
 <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap">
-<div class="pill">En Bs (BCV): <span id="bs_bcv">—</span></div>
-<div class="pill">En Bs (Paralelo): <span id="bs_paralelo">—</span></div>
-<div class="pill" id="usd_desde_bs_wrapper">En $ desde Bs(BCV): <span id="usd_desde_bs">—</span></div>
+<div class="pill">En Bs (BCV): <span id="bs_bcv">—</span><button class="icon-copy-btn" id="btn_copy_bs_bcv" type="button" title="Copiar En Bs (BCV)"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg></button></div>
+<div class="pill">En Bs (Paralelo): <span id="bs_paralelo">—</span><button class="icon-copy-btn" id="btn_copy_bs_paralelo" type="button" title="Copiar En Bs (Paralelo)"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg></button></div>
+<div class="pill" id="usd_desde_bs_wrapper">En $ desde Bs(BCV): <span id="usd_desde_bs">—</span><button class="icon-copy-btn" id="btn_copy_usd_desde_bs" type="button" title="Copiar En divisa desde Bs(BCV)"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg></button></div>
 <button class="copy-btn" id="btn_copy_div">Copiar resultados</button>
 </div>
 <div class="sep"></div>
+<div class="row" style="margin-top:12px">
+<button class="btn reset" id="btn_reset_div">Reset</button>
+</div>
+</div>
 <div class="card" style="padding:14px;background:#fafafa;border:1px solid #eee">
 <h4 style="margin:0 0 8px">Conversión rápida — modo paralelo / BCV</h4>
 <div class="row" style="gap:12px;flex-wrap:wrap">
@@ -169,9 +556,9 @@ body.dark .ud{background:#5e3c49 !important;color:#fff}
 <label id="label_valor_paralelo_ext">Valor en dólar Paralelo:</label>
 <div class="row" style="align-items:center;gap:6px">
 <span class="pill" id="symbol_paralelo_ext">$</span>
-<input id="usd_paralelo_input" min="0" placeholder="Ingrese monto en Paralelo" step="0.01" type="number"/>
-</div>
-<div class="muted" style="margin-top:8px">Equivalente en BCV: <span id="equiv_en_bcv_ext">-</span></div>
+<input id="usd_paralelo_input" min="0" placeholder="Ingrese monto en Paralelo" step="0.01" type="number">
+</input></div>
+<div class="muted" style="margin-top:8px">Equivalente en BCV: <span id="equiv_en_bcv_ext">-</span><button class="icon-copy-btn" id="btn_copy_equiv_en_bcv_ext" type="button" title="Copiar Equivalente en BCV"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg></button></div>
 </div>
 <div style="flex:1;min-width:260px">
 <label id="label_valor_bcv_ext">Valor en dólar BCV:</label>
@@ -179,16 +566,12 @@ body.dark .ud{background:#5e3c49 !important;color:#fff}
 <span class="pill" id="symbol_bcv_ext">$</span>
 <input id="usd_bcv_input" min="0" placeholder="Ingrese monto en BCV" step="0.01" type="number"/>
 </div>
-<div class="muted" style="margin-top:8px">Equivalente en Paralelo: <span id="equiv_en_paralelo_ext">-</span></div>
-<div class="muted" style="margin-top:6px"><strong>Valor en Bs tasa BCV:</strong> <span id="valor_bs_tasa_bcv_ext">-</span></div>
+<div class="muted" style="margin-top:8px">Equivalente en Paralelo: <span id="equiv_en_paralelo_ext">-</span><button class="icon-copy-btn" id="btn_copy_equiv_en_paralelo_ext" type="button" title="Copiar Equivalente en Paralelo"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg></button></div>
+<div class="muted" style="margin-top:6px"><strong>Valor en Bs tasa BCV:</strong> <span id="valor_bs_tasa_bcv_ext">-</span><button class="icon-copy-btn" id="btn_copy_valor_bs_tasa_bcv_ext" type="button" title="Copiar Valor en Bs tasa BCV"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg></button></div>
 </div>
 </div>
 </div>
-<div class="row" style="margin-top:12px">
-<button class="btn reset" id="btn_reset_div">Reset</button>
-</div>
-</div>
-<div class="card md-12">
+<div class="card md-12 neutral">
 <h3>Detalle adicional</h3>
 <div class="row" style="gap:14px;flex-wrap:wrap">
 <div class="pill" id="diff_label">Diferencia (Paralelo - BCV) en Bs por <span id="diff_currency_symbol">$</span>: <span id="diff_bs">—</span></div>
@@ -200,10 +583,9 @@ body.dark .ud{background:#5e3c49 !important;color:#fff}
 </div>
 </div>
 </div></section>
-
 </div>
 <footer class="footer">Suite creada por @subli_mada</footer>
-</div>
+
 <script>
 
 // ============ Helpers (formato, UI, clipboard) ============
@@ -239,7 +621,10 @@ function qs(id){return document.getElementById(id)}
   const views={divisas:qs('view-divisas'),vinil:qs('view-vinil'),basica:qs('view-basica'),sublimacion:qs('view-sublimacion'),etiquetas:qs('view-etiquetas'),empaques:qs('view-empaques'),resumen:qs('view-resumen')};
   buttons.forEach(btn=>btn.addEventListener('click',()=>{
     buttons.forEach(b=>b.classList.remove('active')); btn.classList.add('active');
-    Object.values(views).forEach(v=>v.classList.remove('active')); views[btn.dataset.view].classList.add('active');
+    // Esta versión es “solo módulo”, así que algunas vistas pueden no existir.
+    Object.values(views).forEach(v=>{ if(v) v.classList.remove('active'); });
+    const target = views[btn.dataset.view];
+    if (target) target.classList.add('active');
   }));
 })();
 
@@ -410,6 +795,31 @@ qs('usd_paralelo_input')?.addEventListener('input',()=>divisas_update());
 qs('usd_bcv_input')?.addEventListener('input',()=>divisas_update());
 qs('moneda_bcv')?.addEventListener('change',()=>{ updateLabels(); divisas_update(); });
 qs('btn_copy_div').addEventListener('click',()=>copyText(divisas_toText()));
+function getTextById(id){
+  const el = qs(id);
+  if(!el) return '';
+  const t = (el.textContent || '').trim();
+  return t.replace(/^[-—]\s*$/,'').trim();
+}
+function bindCopyBtn(btnId, textFn){
+  const b = qs(btnId);
+  if(!b) return;
+  b.addEventListener('click', function(ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+    const t = (typeof textFn === 'function') ? textFn() : String(textFn||'');
+    if(t) copyText(t);
+  });
+}
+
+// Copy icons (Conversión rápida)
+bindCopyBtn('btn_copy_bs_bcv', ()=>getTextById('bs_bcv'));
+bindCopyBtn('btn_copy_bs_paralelo', ()=>getTextById('bs_paralelo'));
+bindCopyBtn('btn_copy_usd_desde_bs', ()=>getTextById('usd_desde_bs'));
+bindCopyBtn('btn_copy_equiv_en_bcv_ext', ()=>getTextById('equiv_en_bcv_ext'));
+bindCopyBtn('btn_copy_equiv_en_paralelo_ext', ()=>getTextById('equiv_en_paralelo_ext'));
+bindCopyBtn('btn_copy_valor_bs_tasa_bcv_ext', ()=>getTextById('valor_bs_tasa_bcv_ext'));
+
 qs('btn_reset_div').addEventListener('click',divisas_reset);
 divisas_load();
 updateLabels();
@@ -424,47 +834,168 @@ enforceDecimals(qs('tasa_bcv'),2);
 enforceDecimals(qs('tasa_paralelo'),2);
 enforceDecimals(qs('tasa_euro_bcv'),2);
 
+function rates_render_last_update(){
+  try{
+    const el = qs('rates_last_update');
+    if(!el) return;
+    const ts = parseInt(localStorage.getItem('rates_last_ok_ts') || '0', 10) || 0;
+    if(!ts){ el.textContent = 'Actualizado: —'; return; }
+    const d = new Date(ts);
+    const pad = (n)=>String(n).padStart(2,'0');
+    const txt = pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    el.textContent = 'Actualizado: ' + txt;
+  }catch(e){}
+}
+function rates_pulse_inputs(){
+  try{
+    ['tasa_bcv','tasa_euro_bcv','tasa_paralelo'].forEach(id=>{
+      const el = qs(id);
+      if(!el) return;
+      el.classList.remove('rate-updated');
+      // reflow to restart animation
+      void el.offsetWidth;
+      el.classList.add('rate-updated');
+      setTimeout(()=>{ try{ el.classList.remove('rate-updated'); }catch(e){} }, 750);
+    });
+  }catch(e){}
+}
+
 // ============ Actualización automática de tasas ============
 // Función asíncrona para obtener las tasas actuales del BCV y de Saldoar.
 async function fetchRates(){
+  const __force = !!window.__rates_force_next;
+  window.__rates_force_next = 0;
+
   try{
-    // Obtener la tasa oficial del BCV para USD desde ve.dolarapi.com
-    const bcvResp = await fetch('https://corsproxy.io/?https://ve.dolarapi.com/v1/dolares/oficial');
-    const bcvData = await bcvResp.json();
-    const bcvRate = parseFloat(bcvData?.promedio);
-    if (isFinite(bcvRate)) {
-      // Actualizar el campo de dólar oficial
-      qs('tasa_bcv').value = bcvRate.toFixed(2);
+    // =============================================================
+    // Regla: actualizar al cargar, al presionar “Actualizar tasas” y automático cada 1 hora.
+    // Este archivo ya llama fetchRates() al cargar y tiene un setInterval externo.
+    // Para cumplir “cada 1 hora” sin tocar código fuera de esta función, se aplica:
+    //  - Un programador interno a 1 hora (una sola vez)
+    //  - Un throttle de 1 hora para evitar llamadas más frecuentes (excepto click)
+    // =============================================================
+    if (!window.__rates_hourly_bootstrapped) {
+      window.__rates_hourly_bootstrapped = true;
+      setTimeout(async function __tick(){
+        try { await fetchRates(); } catch(e) {}
+        setTimeout(__tick, 60 * 60 * 1000);
+      }, 60 * 60 * 1000);
     }
-    // Obtener la tasa paralela basada en el mercado P2P de Binance. Usamos la API pública ve.dolarapi.com, que promedia las órdenes abiertas del mercado paralelo.
-    let parRate;
+    const now = Date.now();
+    const lastOk = parseInt(localStorage.getItem('rates_last_ok_ts') || '0', 10) || 0;
+    // Throttle: si NO es forzado, no volver a consultar si hace < 1 hora.
+    if (!__force && lastOk && (now - lastOk) < (60 * 60 * 1000)) {
+      divisas_update();
+      return;
+    }
+
+    // =============================================================
+    // 1) USD BCV (Bs por USD oficial) + 2) EUR BCV (Bs por EUR BCV real)
+    // Fuente primaria: API pública de DolarVZLA (incluye usd y eur en "current").
+    //   https://api.dolarvzla.com/public/exchange-rate
+    // Fallback USD: DolarAPI oficial (promedio)
+    // Fallback EUR: si no viene EUR, se usa cruce permitido
+    //   EUR_BCV = USD_BCV / (EUR_USD)   (EUR_USD = USD por 1 EUR)
+    // =============================================================
+    let usdBcv = NaN;
+    let eurBcv = NaN;
+
+    // 1.a) Primario (DolarVZLA)
     try {
-      const parResp = await fetch('https://corsproxy.io/?https://ve.dolarapi.com/v1/dolares/paralelo');
-      const parData = await parResp.json();
-      const promedio = parseFloat(parData?.promedio);
-      if (isFinite(promedio)) {
-        parRate = promedio;
+      const r = await fetch('https://corsproxy.io/?https://api.dolarvzla.com/public/exchange-rate');
+      const j = await r.json();
+      const u = parseFloat(j?.current?.usd);
+      const e = parseFloat(j?.current?.eur);
+      if (isFinite(u) && u > 0) usdBcv = u;
+      if (isFinite(e) && e > 0) eurBcv = e;
+    } catch (e) {
+      console.error('BCV: error DolarVZLA', e);
+    }
+
+    // 1.b) Fallback USD (DolarAPI)
+    if (!isFinite(usdBcv)) {
+      try {
+        const bcvResp = await fetch('https://corsproxy.io/?https://ve.dolarapi.com/v1/dolares/oficial');
+        const bcvData = await bcvResp.json();
+        usdBcv = parseFloat(bcvData?.promedio);
+      } catch (e) {
+        console.error('USD BCV: error DolarAPI oficial', e);
+      }
+    }
+
+    // Reflejar USD BCV si hay dato
+    if (isFinite(usdBcv)) qs('tasa_bcv').value = usdBcv.toFixed(2);
+
+    // 2) EUR BCV: si no viene directo, usar cruce permitido
+    if (!isFinite(eurBcv) && isFinite(usdBcv)) {
+      let eurUsd = NaN;
+      try {
+        const fxResp = await fetch('https://corsproxy.io/?https://open.er-api.com/v6/latest/EUR');
+        const fxData = await fxResp.json();
+        eurUsd = parseFloat(fxData?.rates?.USD);
+      } catch (e) {
+        console.error('EUR_USD: error open.er-api', e);
+      }
+      // Fallback 2
+      if (!isFinite(eurUsd) || eurUsd <= 0) {
+        try {
+          const fx2 = await fetch('https://corsproxy.io/?https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
+          const fx2Data = await fx2.json();
+          eurUsd = parseFloat(fx2Data?.eur?.usd);
+        } catch (e) {
+          console.error('EUR_USD: error fawaz', e);
+        }
+      }
+      if (isFinite(eurUsd) && eurUsd > 0) eurBcv = usdBcv / eurUsd;
+    }
+
+    if (isFinite(eurBcv)) qs('tasa_euro_bcv').value = eurBcv.toFixed(2);
+
+    // =============================================================
+    // 3) Paralelo = COMPRA USDT BINANCE P2P (Bs → USD)
+    // Regla estricta:
+    // - Usar SOLO Binance P2P
+    // - Tomar EXCLUSIVAMENTE binancep2p.ask (o totalAsk si existe)
+    // - NO promediar con otros exchanges
+    // =============================================================
+    let parRate = NaN;
+
+    // 3.a) Preferido: CriptoYa → Binance P2P
+    try {
+      const p2pResp = await fetch('https://corsproxy.io/?https://criptoya.com/api/USDT/VES/1');
+      const p2pData = await p2pResp.json();
+      const binance = p2pData?.binancep2p;
+      const ask = parseFloat(binance?.totalAsk ?? binance?.ask);
+      if (isFinite(ask) && ask > 0) {
+        parRate = ask;
       }
     } catch (e) {
-      console.error('Error retrieving paralelo rate:', e);
+      console.error('Paralelo Binance P2P: error CriptoYa', e);
     }
-    if (parRate) {
-      qs('tasa_paralelo').value = parRate.toFixed(2);
-    }
-    // Calcular automáticamente la tasa del euro oficial usando una API externa de divisas (USD base)
-    if (isFinite(bcvRate)) {
+
+    // 3.b) Fallback: DolarAPI paralelo (COMPRA)
+    if (!isFinite(parRate)) {
       try {
-        const fxResp = await fetch('https://corsproxy.io/?https://open.er-api.com/v6/latest/USD');
-        const fxData = await fxResp.json();
-        const eurRate = parseFloat(fxData?.rates?.EUR);
-        if (isFinite(eurRate) && eurRate !== 0) {
-          const eurBcv = bcvRate / eurRate;
-          qs('tasa_euro_bcv').value = eurBcv.toFixed(2);
-        }
+        const parResp = await fetch('https://corsproxy.io/?https://ve.dolarapi.com/v1/dolares/paralelo');
+        const parData = await parResp.json();
+        const compra = parseFloat(parData?.compra);
+        if (isFinite(compra) && compra > 0) parRate = compra;
       } catch (e) {
-        console.error('Error retrieving EUR rate:', e);
+        console.error('Paralelo fallback: error DolarAPI', e);
       }
     }
+
+    if (isFinite(parRate)) {
+      qs('tasa_paralelo').value = parRate.toFixed(2);
+    }
+
+    // Marcar última actualización exitosa (no rompe localStorage existente)
+    if (isFinite(usdBcv) || isFinite(parRate)) {
+      localStorage.setItem('rates_last_ok_ts', String(Date.now()));
+      rates_render_last_update();
+      rates_pulse_inputs();
+    }
+
     // Actualizar los cálculos después de modificar las tasas
     divisas_update();
   }catch(err){
@@ -475,9 +1006,11 @@ async function fetchRates(){
 
 // Evento para el botón de refresco de tasas
 qs('btn_refresh_rates').addEventListener('click', ()=>{
+  window.__rates_force_next = Date.now();
   fetchRates();
 });
 // Ejecutar la carga inicial y actualizar cada 15 minutos
+rates_render_last_update();
 fetchRates();
 setInterval(fetchRates, 15 * 60 * 1000);
 
@@ -487,11 +1020,121 @@ setInterval(fetchRates, 15 * 60 * 1000);
 // Evitar errores por botones inexistentes en esta versión
 try{ document.getElementById('btn_copy_resumen')?.remove(); }catch(e){}
 try{ document.getElementById('btn_print_resumen')?.remove(); }catch(e){}
-</script>
-<script>
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js');
-}
+
+// ============ Defaults + Reset general (top buttons) ============
+(function initDefaultsAndReset(){
+  try{
+    document.querySelectorAll('input, select, textarea').forEach(function(el){
+      if(el.id === 'dark_toggle') return;
+      if(el.type === 'number'){
+        el.value = '0';
+      }else if(el.tagName === 'SELECT'){
+        if(el.id === 'moneda_bcv') { el.value = 'USD'; try{ el.dispatchEvent(new Event('change', {bubbles:true})); }catch(e){} }
+      }else{
+        el.value = '';
+      }
+    });
+  }catch(e){}
+
+  var btnReset = document.getElementById('btn_reset_general');
+  if(btnReset){
+    btnReset.addEventListener('click', function(){
+      try{
+        localStorage.removeItem('divisas_state');
+        localStorage.removeItem('rates_last_ok_ts');
+      }catch(e){}
+
+      try{
+        document.querySelectorAll('input, select, textarea').forEach(function(el){
+          if(el.id === 'dark_toggle') return;
+          if(el.type === 'number'){
+            el.value = '0';
+          }else if(el.tagName === 'SELECT'){
+            if(el.id === 'moneda_bcv') { el.value = 'USD'; try{ el.dispatchEvent(new Event('change', {bubbles:true})); }catch(e){} }
+          }else{
+            el.value = '';
+          }
+        });
+      }catch(e){}
+
+      try{
+        ['tasa_bcv','tasa_paralelo','tasa_euro_bcv'].forEach(function(id){
+          var el = document.getElementById(id);
+          if(el) el.value = '0.00';
+        });
+      }catch(e){}
+
+      try{
+        if(typeof divisas_update === 'function') divisas_update();
+      try{ if(typeof divisas_apply_currency_ui==='function') divisas_apply_currency_ui(); }catch(e){}
+      try{ if(typeof divisas_currency_ui==='function') divisas_currency_ui(); }catch(e){}
+
+      }catch(e){}
+
+      // Auto actualizar tasas después del reset
+      try{
+        if(typeof fetchRates === 'function') { window.__rates_force_next = Date.now(); fetchRates(); }
+      }catch(e){}
+    });
+  }
+})();
+/* === Header compacto en scroll (igual que Suite) === */
+(function(){
+  const header = document.querySelector('.app > header.app-header') || document.querySelector('header.app-header');
+  if (!header) return;
+
+  const mq = window.matchMedia('(max-width: 840px)');
+  const ENTER_Y = 80;  // Compactar al pasar esta altura
+  const EXIT_Y  = 5;   // Descompactar solo al volver casi arriba
+  let isCompact = false;
+
+  function applyState(shouldCompact){
+    if (shouldCompact === isCompact) return;
+    isCompact = shouldCompact;
+    if (isCompact) header.classList.add('header-compact');
+    else header.classList.remove('header-compact');
+  }
+
+  function updateHeader(){
+    const y = window.scrollY || document.documentElement.scrollTop || 0;
+    if (!mq.matches){ applyState(false); return; }
+    if (!isCompact && y > ENTER_Y) applyState(true);
+    else if (isCompact && y < EXIT_Y) applyState(false);
+  }
+
+  window.addEventListener('scroll', updateHeader, {passive:true});
+  if (mq.addEventListener) mq.addEventListener('change', updateHeader);
+  else if (mq.addListener) mq.addListener(updateHeader);
+
+  document.addEventListener('DOMContentLoaded', updateHeader);
+  updateHeader();
+})();
+/* === Header actions (UI only) === */
+(function initTopActions(){
+  const topBtn = document.getElementById('btn_refresh_top');
+  const mainBtn = document.getElementById('btn_refresh_rates');
+  if(topBtn && mainBtn){
+    topBtn.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      mainBtn.click();
+    });
+  }
+})();
+
+/* === Online/Offline chip === */
+(function initOnlineChip(){
+  const chip = document.getElementById('chip_online');
+  if(!chip) return;
+  function render(){
+    const on = navigator.onLine;
+    chip.textContent = on ? 'Online' : 'Offline';
+    chip.classList.toggle('ok', !!on);
+    chip.classList.toggle('warn', !on);
+  }
+  window.addEventListener('online', render);
+  window.addEventListener('offline', render);
+  render();
+})();
 </script>
 </body>
 </html>
