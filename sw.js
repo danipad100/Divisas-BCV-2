@@ -1,75 +1,96 @@
-/* Divisas BCV — Service Worker */
-const VERSION = "4";
-const CACHE_NAME = `divisas-bcv-cache-v${VERSION}`;
+/* Divisas BCV Service Worker */
+const VERSION = '4';
+const CACHE_NAME = `divisas-bcv-shell-v${VERSION}`;
 
-const PRECACHE_URLS = [
-  "./",
-  "./index.html",
-  "./manifest.json",
-  "./icon-180.png",
-  "./icon-192.png",
-  "./icon-512.png"
+const APP_SHELL = [
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-180.png'
 ];
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
-  );
-  self.skipWaiting();
+// Install: cache shell, activate immediately
+self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.addAll(APP_SHELL.map(u => new Request(u, { cache: 'reload' })));
+    await self.skipWaiting();
+  })());
 });
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    (async () => {
-      const keys = await caches.keys();
-      await Promise.all(
-        keys
-          .filter((k) => k.startsWith("divisas-bcv-cache-v") && k !== CACHE_NAME)
-          .map((k) => caches.delete(k))
-      );
-      await self.clients.claim();
-    })()
-  );
+// Activate: clean old caches + take control
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : Promise.resolve())));
+    await self.clients.claim();
+  })());
 });
 
-/* Network-first for navigations, stale-while-revalidate for others */
-self.addEventListener("fetch", (event) => {
+// Messaging: allow app to request update checks or skipWaiting (optional)
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Fetch strategy:
+// - App shell (navigation) -> network-first (so updates arrive), fallback to cache
+// - Static assets in shell -> cache-first
+// - API calls (rates) -> network-only (never cache, always fresh)
+self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Only handle GET
-  if (req.method !== "GET") return;
+  // Only handle same-origin
+  const sameOrigin = url.origin === self.location.origin;
 
-  // Navigation: try network, fallback to cache
-  if (req.mode === "navigate") {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const resClone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", resClone)).catch(() => {});
-          return res;
-        })
-        .catch(() => caches.match("./index.html"))
-    );
+  // Never cache API/third-party fetches (rates need to stay fresh)
+  if (!sameOrigin) {
+    return; // Let browser handle normally
+  }
+
+  // Navigation requests: network-first
+  if (req.mode === 'navigate') {
+    event.respondWith((async () => {
+      try {
+        const fresh = await fetch(new Request('./index.html', { cache: 'no-store' }));
+        const cache = await caches.open(CACHE_NAME);
+        cache.put('./index.html', fresh.clone());
+        return fresh;
+      } catch (e) {
+        const cached = await caches.match('./index.html');
+        return cached || Response.error();
+      }
+    })());
     return;
   }
 
-  // Same-origin: stale-while-revalidate
-  if (url.origin === self.location.origin) {
-    event.respondWith(
-      caches.match(req).then((cached) => {
-        const fetchPromise = fetch(req)
-          .then((res) => {
-            const resClone = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone)).catch(() => {});
-            return res;
-          })
-          .catch(() => cached);
-        return cached || fetchPromise;
-      })
-    );
+  // Cache-first for known shell files
+  if (APP_SHELL.includes(url.pathname.startsWith('/') ? '.'+url.pathname : url.pathname) ||
+      APP_SHELL.includes(url.pathname) ||
+      APP_SHELL.includes(url.pathname.replace(/^\//,'./'))) {
+    event.respondWith((async () => {
+      const cached = await caches.match(req);
+      if (cached) return cached;
+      const fresh = await fetch(req);
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(req, fresh.clone());
+      return fresh;
+    })());
     return;
   }
 
-  // Cross-origin (fonts/apis): pass-through (no cache) to avoid CORS issues
+  // Default: network-first (but do not cache)
+  event.respondWith((async () => {
+    try {
+      return await fetch(req);
+    } catch (e) {
+      // If offline and something was cached incidentally, serve it
+      const cached = await caches.match(req);
+      return cached || Response.error();
+    }
+  })());
 });
