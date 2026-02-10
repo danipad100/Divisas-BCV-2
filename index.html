@@ -453,7 +453,7 @@ body.dark .card.primary{
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
       // Registrar el Service Worker con un parámetro de versión para forzar actualización en navegadores.
-      navigator.serviceWorker.register('sw.js?v=5');
+      navigator.serviceWorker.register('sw.js?v=4');
     });
   }
 </script>
@@ -861,40 +861,6 @@ function rates_pulse_inputs(){
   }catch(e){}
 }
 
-
-// ===== Helpers: fetch sin caché + fallback de proxies (para evitar respuestas pegadas) =====
-function __withCacheBust(url){
-  try{
-    const u = new URL(url);
-    u.searchParams.set('_', String(Date.now()));
-    return u.toString();
-  }catch(e){
-    const sep = url.includes('?') ? '&' : '?';
-    return url + sep + '_=' + Date.now();
-  }
-}
-async function __fetchJsonNoCache(url){
-  const bust = __withCacheBust(url);
-  const proxies = [
-    // 1) corsproxy.io (rápido)
-    'https://corsproxy.io/?' + bust,
-    // 2) AllOrigins raw (suele tolerar origin null / local)
-    'https://api.allorigins.win/raw?url=' + encodeURIComponent(bust),
-  ];
-  let lastErr = null;
-  for(const p of proxies){
-    try{
-      const r = await fetch(p, {cache:'no-store', headers:{'pragma':'no-cache','cache-control':'no-cache'}});
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      const t = await r.text();
-      try { return JSON.parse(t); } catch(e){ return await r.json(); }
-    }catch(e){
-      lastErr = e;
-    }
-  }
-  throw lastErr || new Error('No se pudo consultar la tasa (proxy)');
-}
-
 // ============ Actualización automática de tasas ============
 // Función asíncrona para obtener las tasas actuales del BCV y de Saldoar.
 async function fetchRates(){
@@ -937,7 +903,7 @@ async function fetchRates(){
 
     // 1.a) Primario (DolarVZLA)
     try {
-      const r = await (async()=>{const j=await __fetchJsonNoCache('https://api.dolarvzla.com/public/exchange-rate'); return {json: async()=>j};})();
+      const r = await fetch('https://corsproxy.io/?https://api.dolarvzla.com/public/exchange-rate');
       const j = await r.json();
       const u = parseFloat(j?.current?.usd);
       const e = parseFloat(j?.current?.eur);
@@ -950,7 +916,7 @@ async function fetchRates(){
     // 1.b) Fallback USD (DolarAPI)
     if (!isFinite(usdBcv)) {
       try {
-        const bcvResp = await (async()=>{const j=await __fetchJsonNoCache('https://ve.dolarapi.com/v1/dolares/oficial'); return {json: async()=>j};})();
+        const bcvResp = await fetch('https://corsproxy.io/?https://ve.dolarapi.com/v1/dolares/oficial');
         const bcvData = await bcvResp.json();
         usdBcv = parseFloat(bcvData?.promedio);
       } catch (e) {
@@ -965,7 +931,7 @@ async function fetchRates(){
     if (!isFinite(eurBcv) && isFinite(usdBcv)) {
       let eurUsd = NaN;
       try {
-        const fxResp = await (async()=>{const j=await __fetchJsonNoCache('https://open.er-api.com/v6/latest/EUR'); return {json: async()=>j};})();
+        const fxResp = await fetch('https://corsproxy.io/?https://open.er-api.com/v6/latest/EUR');
         const fxData = await fxResp.json();
         eurUsd = parseFloat(fxData?.rates?.USD);
       } catch (e) {
@@ -974,7 +940,7 @@ async function fetchRates(){
       // Fallback 2
       if (!isFinite(eurUsd) || eurUsd <= 0) {
         try {
-          const fx2 = await (async()=>{const j=await __fetchJsonNoCache('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json'); return {json: async()=>j};})();
+          const fx2 = await fetch('https://corsproxy.io/?https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
           const fx2Data = await fx2.json();
           eurUsd = parseFloat(fx2Data?.eur?.usd);
         } catch (e) {
@@ -1001,7 +967,7 @@ async function fetchRates(){
 
     // 3.a) Preferido: CriptoYa → Binance P2P
     try {
-      const p2pResp = await (async()=>{const j=await __fetchJsonNoCache('https://criptoya.com/api/USDT/VES/1'); return {json: async()=>j};})();
+      const p2pResp = await fetch('https://corsproxy.io/?https://criptoya.com/api/USDT/VES/1');
       const p2pData = await p2pResp.json();
       const binance = p2pData?.binancep2p;
       const ask = parseFloat(binance?.totalAsk ?? binance?.ask);
@@ -1015,7 +981,7 @@ async function fetchRates(){
     // 3.b) Fallback: DolarAPI paralelo (COMPRA)
     if (!isFinite(parRate)) {
       try {
-        const parResp = await (async()=>{const j=await __fetchJsonNoCache('https://ve.dolarapi.com/v1/dolares/paralelo'); return {json: async()=>j};})();
+        const parResp = await fetch('https://corsproxy.io/?https://ve.dolarapi.com/v1/dolares/paralelo');
         const parData = await parResp.json();
         const compra = parseFloat(parData?.compra);
         if (isFinite(compra) && compra > 0) parRate = compra;
