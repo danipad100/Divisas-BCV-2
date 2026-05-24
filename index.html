@@ -1,595 +1,905 @@
 <!DOCTYPE html>
-
-<html lang="es">
+<html lang="es" data-app-version="DivisasBCV_v1_0">
 <head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" name="viewport"/>
 <title>Divisas BCV — PWA</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
 <style>
-:root{
-  --bg:#f7f7fb;--card:#fff;--ink:#222;--muted:#6b7280;
-  --brand:#ff7aa2;--brand2:#7aa2ff;--ok:#22c55e;--danger:#ef4444;
-  --radius:16px;
-}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
-  font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;line-height:1.35}
-.app{max-width:1200px;margin:auto;padding:18px}
-header{position:sticky;top:0;z-index:950;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;padding:18px;border-radius:var(--radius);
-  box-shadow:0 10px 25px rgba(0,0,0,.10);display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between}
-header h1{margin:0;font-size:22px}
-nav{display:flex;gap:8px;flex-wrap:wrap}
-nav button{appearance:none;border:none;background:#ffffffee;color:#111;padding:10px 14px;border-radius:999px;font-weight:600;cursor:pointer;
-  box-shadow:0 2px 6px rgba(0,0,0,.10);transition:.2s}
-nav button.active{background:#111;color:#fff}
-.view{display:none;margin-top:16px}
-.view.active{display:block}
-.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
-.card{grid-column:span 12;background:var(--card);border-radius:var(--radius);box-shadow:0 8px 20px rgba(0,0,0,.06);padding:16px;overflow:hidden}
-@media(min-width:900px){.md-6{grid-column:span 6}.md-8{grid-column:span 8}.md-4{grid-column:span 4}.md-12{grid-column:span 12}.md-3{grid-column:span 3}}
-label{font-size:12px;color:var(--muted);display:block;margin:6px 0 4px}
-input[type="number"],input[type="text"],select{width:100%;padding:12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-size:14px}
-input:focus,select:focus{outline:none;box-shadow:0 0 0 3px rgba(255,122,162,.25);border-color:#ffd1e1}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
-.btn{appearance:none;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer}
-.btn.reset{background:var(--danger);color:#fff}
-.btn.ok{background:var(--ok);color:#fff}
-.btn.neutral{background:#111;color:#fff}
-.muted{color:var(--muted)}
-.result{font-weight:600}
-.pill{display:inline-flex;align-items:center;gap:6px;background:#f3f4f6;border-radius:999px;padding:6px 10px;font-size:12px}
-.sep{height:1px;background:#eee;margin:12px 0}
-.tot{font-size:18px;font-weight:700}
-.footer{margin:28px 0 8px;color:var(--muted);text-align:center}
-.copy-btn{font-size:12px;border:none;background:#f3f4f6;border-radius:8px;padding:6px 8px;cursor:pointer}
-.ud{background:#ffe8ee !important;font-weight:600}
-.chk-label{font-weight:700}
-#bloques{display:grid;grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap:14px;}
-.color-preview{width:14px;height:14px;border-radius:4px;border:1px solid #e5e7eb;display:inline-block;vertical-align:middle;margin-right:6px}
-/* Dark mode */
-body.dark{background:#0f1115;color:#e5e7eb}
-body.dark header{box-shadow:none}
-body.dark .card{background:#151924;box-shadow:none;border:1px solid #23283a}
-body.dark .pill,.dark .chip{background:#1b2030;border-color:#2a3147;color:#e5e7eb}
-body.dark input[type="number"],body.dark input[type="text"],body.dark select{background:#0f1115;color:#e5e7eb;border-color:#2a3147}
-body.dark .copy-btn{background:#1b2030;color:#e5e7eb}
-body.dark nav button{background:#1b2030;color:#e5e7eb}
-body.dark nav button.active{background:#e5e7eb;color:#0f1115}
-body.dark .ud{background:#5e3c49 !important;color:#fff}
-.center-actions{display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap}
-@media print{
-  header, nav, .copy-btn, .btn.reset, .btn.ok, .btn.neutral, .footer, .center-actions{display:none !important}
-  body{background:#fff}
-  .view{display:none !important}
-  .view.active{display:block !important}
-  .card{box-shadow:none !important;border:1px solid #ddd}
+/* ═══════════════════════════════════════
+   MOBILE-FIRST APP DESIGN
+   Native-feel PWA for Divisas BCV
+   ═══════════════════════════════════════ */
+
+:root {
+  --bg: #f0f2f5;
+  --surface: #ffffff;
+  --surface-alt: #f8f9fb;
+  --text: #1a1d23;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --border: rgba(0,0,0,.06);
+  --border-strong: rgba(0,0,0,.10);
+
+  /* Accent */
+  --accent: #4f46e5;
+  --accent-light: rgba(79,70,229,.08);
+  --accent-glow: rgba(79,70,229,.18);
+
+  /* Semantic */
+  --green: #10b981;
+  --green-bg: rgba(16,185,129,.10);
+  --red: #ef4444;
+  --red-bg: rgba(239,68,68,.10);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245,158,11,.10);
+
+  /* Card */
+  --card-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+  --card-radius: 20px;
+  --input-radius: 14px;
+
+  /* Safe areas */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
 }
 
-/* === Vinil summary helpers === */
-.mono{ font-variant-numeric: tabular-nums; }
-#vinil_summary strong{ transition: opacity .15s ease; }
-#vinil_summary strong.upd{ opacity:.25 }
-/* === UI Enhancements (no logic/ID changes) === */
-.card.primary{border:1px solid rgba(255,122,162,.22)}
-.card.secondary{background:linear-gradient(180deg,#ffffff 0%, #fafafa 100%);border:1px solid rgba(0,0,0,.04)}
-.card.neutral{border:1px solid rgba(0,0,0,.06)}
-.rate-input{background:#fff7fa;border-color:#ffd1e1;font-weight:700}
-body.dark .rate-input{background:#121827;border-color:#2a3147}
-.pill span{font-weight:700}
-.pill{backdrop-filter:saturate(1.2); }
-.card, input, select, button, .pill{transition:all .15s ease}
-.rate-updated{animation:ratePulse .65s ease}
-@keyframes ratePulse{0%{box-shadow:0 0 0 0 rgba(255,122,162,.35)}100%{box-shadow:0 0 0 10px rgba(255,122,162,0)}}
-nav{position:sticky;top:0;z-index:5}
-header{position:sticky;top:0;z-index:6}
-
-/* === Suite-like tokens + dark mode improvements (override, no IDs changed) === */
-:root{
-  --text:#111827;
-  --card-border:#e5e7eb;
-  --shadow:0 10px 25px rgba(0,0,0,.06);
-  --input-bg:#ffffff;
-  --input-border:#e5e7eb;
-  --pill:#f3f4f6;
-  --pill-text:#111827;
-  --accent:#2563eb;
-  --accent-contrast:#ffffff;
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
 }
-body.dark{
-  --bg:#0f1115;
-  --text:#e5e7eb;
-  --muted:#9fb0c6;
-  --card:#151924;
-  --card-border:#23283a;
-  --shadow:none;
-  --input-bg:#0f1115;
-  --input-border:#2a3147;
-  --pill:#1b2030;
-  --pill-text:#e5e7eb;
-  --accent:#2563eb;
-  --accent-contrast:#ffffff;
-}
-body{ background:var(--bg); color:var(--text); }
-.card{ background:var(--card); border:1px solid var(--card-border); box-shadow:var(--shadow); }
-label, .muted{ color: var(--muted); }
-.pill, .chip{ background:var(--pill); color:var(--pill-text); border:1px solid var(--card-border); }
-
-input[type="number"], input[type="text"], select{
-  background:var(--input-bg);
-  color:var(--text);
-  border:1px solid var(--input-border);
-}
-input[type="number"]:focus, input[type="text"]:focus, select:focus{
-  outline:none;
-  box-shadow:0 0 0 2px #3b82f6;
-  border-color:#3b82f6;
+body {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Buttons (match Suite feel) */
-.btn{
-  background:var(--accent);
-  color:var(--accent-contrast);
-  border:none;
-  border-radius:10px;
-  padding:8px 12px;
-  font-weight:600;
-  box-shadow:0 2px 6px rgba(0,0,0,.10);
-}
-.btn.neutral{ background:var(--accent); color:var(--accent-contrast); }
-.btn.ok{ background:var(--ok); color:#fff; }
-.btn.reset{
-  background:transparent;
-  color:var(--text);
-  border:1px dashed var(--muted);
-  box-shadow:none;
-}
-.btn:hover{ filter:brightness(1.05); }
-
-/* Nav buttons */
-nav button{
-  background:var(--pill);
-  color:var(--text);
-  box-shadow:none;
-}
-nav button.active{
-  background:var(--text);
-  color:var(--bg);
-}
-body.dark nav button.active{
-  background:#e5e7eb;
-  color:#0f1115;
+/* ── App shell ── */
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 16px;
+  padding-top: calc(var(--sat) + 8px);
+  padding-bottom: calc(var(--sab) + 90px);
 }
 
-/* Dark Toggle pill (Sol/Luna) */
-.dark-toggle-pill{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  font-size:12px;
-  padding:6px 10px;
-  border-radius:999px;
-  background:#ffffff33;
-  color:#fff;
-  cursor:pointer;
-  user-select:none;
+/* ═══ HEADER ═══ */
+header.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  margin: 0 -16px;
+  padding: 16px 20px;
+  padding-top: calc(var(--sat) + 16px);
+  background: rgba(240,242,245,.82);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all .25s cubic-bezier(.4,0,.2,1);
 }
-.dark-toggle-pill input{
-  position:absolute;
-  opacity:0;
-  pointer-events:none;
+header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.3px;
+  color: var(--text);
 }
-.dark-toggle-pill .dt-ico{ width:16px; height:16px; display:block; }
-.dark-toggle-pill .dt-sun{ display:none; }
-.dark-toggle-pill input:checked ~ .dt-moon{ display:none; }
-.dark-toggle-pill input:checked ~ .dt-sun{ display:block; }
-body.dark .dark-toggle-pill{ background:var(--pill); color:var(--text); }
-
-/* === Header shrink on scroll (Suite-like) === */
-header{
-  transition: padding .2s ease, box-shadow .2s ease, transform .2s ease;
-}
-.app-header.header-compact{
-  padding: 8px 14px;
-  box-shadow: 0 6px 14px rgba(0,0,0,.08);
+.header-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-/* Header compacto en scroll (solo móviles) */
-@media (max-width: 840px){
-  .app-header.header-compact .header-right{ display:none !important; }
-  .app-header.header-compact h1{ font-size:16px !important; margin:0 !important; }
-  .app-header.header-compact nav button{ padding:6px 10px !important; font-size:12px !important; }
+/* Dark toggle */
+.dark-toggle-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--accent-light);
+  cursor: pointer;
+  transition: all .2s;
+  border: none;
+  position: relative;
+}
+.dark-toggle-pill:active { transform: scale(.92); }
+.dark-toggle-pill input { position: absolute; opacity: 0; pointer-events: none; }
+.dark-toggle-pill .dt-ico { width: 20px; height: 20px; display: block; color: var(--accent); }
+.dark-toggle-pill .dt-sun { display: none; }
+.dark-toggle-pill input:checked ~ .dt-moon { display: none; }
+.dark-toggle-pill input:checked ~ .dt-sun { display: block; }
+.dark-toggle-pill span { display: none; }
+
+/* Icon buttons (header) */
+.icon-top-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--accent-light);
+  border: none;
+  cursor: pointer;
+  color: var(--accent);
+  transition: all .2s;
+  padding: 0;
+}
+.icon-top-btn:active { transform: scale(.92); }
+.icon-top-btn svg { width: 20px; height: 20px; }
+
+/* Header compact on scroll */
+header.app-header.header-compact {
+  padding: 10px 16px;
+  padding-top: calc(var(--sat) + 10px);
+}
+header.app-header.header-compact h1 { font-size: 16px; }
+
+/* ═══ SECTIONS ═══ */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ═══ RATE HERO CARDS ═══ */
+.rate-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0 12px;
+}
+.rate-card {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 14px 12px;
+  text-align: center;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  transition: all .2s;
+}
+.rate-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 16px 16px 0 0;
+}
+.rate-card.usd::before { background: var(--accent); }
+.rate-card.eur::before { background: var(--green); }
+.rate-card.par::before { background: var(--amber); }
+
+.rate-card .rate-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+.rate-card .rate-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.rate-card .rate-prefix {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
+/* Hidden rate inputs (still functional) */
+.rate-inputs-hidden {
+  display: none;
+}
 
-header.shrink h1{
-  font-size: 16px;
+/* ═══ META ROW ═══ */
+.meta-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  align-items: center;
 }
-header.shrink nav button{
-  padding: 6px 10px;
-  font-size: 12px;
-}
-header.shrink .dark-toggle-pill{
-  padding: 4px 8px;
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 100px;
   font-size: 11px;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
-/* === Dark mode refinement (Suite-like) === */
-body.dark{
-  background:#0b0e14;
-  color:#e6e9ef;
-}
-body.dark header{
-  background:linear-gradient(120deg,#1f2937,#111827);
-  color:#e6e9ef;
-}
-body.dark h1, body.dark h2, body.dark h3, body.dark h4{
-  color:#f9fafb;
-}
-body.dark .card{
-  background:#111827;
-  border:1px solid #1f2937;
-}
-body.dark label{ color:#9ca3af; }
-body.dark .pill{
-  background:#1f2937;
-  border-color:#374151;
-  color:#e5e7eb;
-}
-body.dark input[type="number"],
-body.dark input[type="text"],
-body.dark select{
-  background:#0b0e14;
-  border-color:#374151;
-  color:#f9fafb;
-}
-body.dark input:focus, body.dark select:focus{
-  box-shadow:0 0 0 2px rgba(59,130,246,.6);
-  border-color:#3b82f6;
-}
-body.dark .btn{
-  background:#2563eb;
-  color:#fff;
-}
-body.dark .btn.reset{
-  background:transparent;
-  color:#9ca3af;
-  border:1px dashed #374151;
-}
-body.dark .btn:hover{ filter:brightness(1.1); }
-body.dark .footer{ color:#9ca3af; }
-/* === Dark mode overrides for inline-styled blocks === */
-body.dark select{ background:#0b0e14 !important; border-color:#374151 !important; color:#f9fafb !important; }
-body.dark .card[style*="background"]{ background:#111827 !important; }
-body.dark .card[style*="border"]{ border-color:#1f2937 !important; }
-body.dark .card[style*="background:#fafafa"]{ background:#111827 !important; }
-body.dark .card[style*="border:1px solid #eee"]{ border-color:#1f2937 !important; }
-/* Ensure separators are visible in dark */
-body.dark .sep{ background:#1f2937; }
-/* === Copy icon buttons === */
-.icon-copy-btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:28px;
-  height:28px;
-  margin-left:8px;
-  border-radius:10px;
-  border:1px solid rgba(0,0,0,.08);
-  background:transparent;
-  cursor:pointer;
-  vertical-align:middle;
-  padding:0;
-}
-.icon-copy-btn svg{ width:18px; height:18px; }
-.icon-copy-btn:hover{ filter:brightness(1.05); }
-body.dark .icon-copy-btn{
-  border-color:#374151;
-}
-body.dark .icon-copy-btn:hover{ filter:brightness(1.12); }
-.pill{ gap:8px; }
-.result-inline{ display:inline-flex; align-items:center; gap:6px; }
-/* === Copy icon buttons (modern minimal) === */
-.icon-copy-btn{
-  width:26px;
-  height:26px;
-  border-radius:9px;
-  border:1px solid rgba(0,0,0,.10);
-  background:rgba(255,255,255,.0);
-}
-.icon-copy-btn:hover{
-  background:rgba(0,0,0,.04);
-  border-color:rgba(0,0,0,.14);
-}
-.icon-copy-btn:active{ transform:scale(.98); }
-.icon-copy-btn svg{ width:17px; height:17px; opacity:.85; }
-body.dark .icon-copy-btn{
-  border-color:rgba(255,255,255,.14);
-  background:rgba(255,255,255,0);
-}
-body.dark .icon-copy-btn:hover{
-  background:rgba(255,255,255,.06);
-  border-color:rgba(255,255,255,.18);
-}
-/* === App header actions + chips + density (UI only) === */
-.icon-top-btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:38px;height:38px;border-radius:12px;
-  border:1px solid rgba(255,255,255,.25);
-  background:rgba(255,255,255,.12);
-  color:#fff;cursor:pointer; padding:0;
-  transition:all .15s ease;
-}
-.icon-top-btn svg{width:20px;height:20px;opacity:.95}
-.icon-top-btn:hover{background:rgba(255,255,255,.18)}
-.icon-top-btn:active{transform:scale(.98)}
-.icon-top-btn.primary{
-  background:rgba(17,24,39,.22);
-  border-color:rgba(255,255,255,.28);
-}
-body.dark .icon-top-btn{
-  border-color:rgba(255,255,255,.14);
-  background:rgba(255,255,255,.06);
-  color:#e5e7eb;
-}
-body.dark .icon-top-btn.primary{
-  background:rgba(37,99,235,.22);
-  border-color:rgba(59,130,246,.35);
-}
-.rate-meta-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
-.chip{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:6px 10px;border-radius:999px;
-  font-size:12px;font-weight:600;
-  background:rgba(0,0,0,.04);
-  border:1px solid rgba(0,0,0,.06);
-  color:var(--text);
-}
-.chip.ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25)}
-.chip.warn{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.22)}
-body.dark .chip{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.10);color:var(--text)}
-body.dark .chip.ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25)}
-body.dark .chip.warn{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.22)}
-label{font-size:11px;letter-spacing:.2px}
-.rate-input{font-size:18px;height:50px}
-@media(max-width:520px){
-  .app{padding:14px}
-  .card{padding:14px}
-  .grid{gap:12px}
-}
-/* Header shrink: keep title + dark + refresh; hide reset icon */
-header.shrink #btn_reset_general{display:none}
-/* === Dark mode premium (depth + subtle gradient) === */
-body.dark{
-  background: radial-gradient(1200px 600px at 20% -10%, rgba(37,99,235,.18), transparent 55%),
-              radial-gradient(900px 500px at 90% 10%, rgba(255,122,162,.14), transparent 55%),
-              #0b0e14;
-}
-body.dark .card{
-  background: linear-gradient(180deg, rgba(255,255,255,.04) 0%, rgba(255,255,255,.02) 100%), #0f1624;
-  border:1px solid rgba(148,163,184,.16);
-  box-shadow: 0 12px 26px rgba(0,0,0,.35);
-}
-body.dark .card.primary{
-  border-color: rgba(255,122,162,.22);
-}
-body.dark .card.secondary{
-  border-color: rgba(59,130,246,.18);
-}
-body.dark .pill{
-  background: rgba(255,255,255,.06);
-  border-color: rgba(148,163,184,.16);
-}
-body.dark .sep{ background: rgba(148,163,184,.14); }
-
-/* Buttons: clearer hover/active in dark */
-body.dark .btn, body.dark .icon-top-btn{
-  transition: background .15s ease, border-color .15s ease, transform .08s ease, filter .15s ease;
-}
-body.dark .btn:hover{ filter:brightness(1.12); }
-body.dark .btn:active{ transform:scale(.99); }
-body.dark .icon-top-btn:hover{ background: rgba(255,255,255,.10); }
-body.dark .icon-top-btn:active{ transform:scale(.98); }
-
-/* Inputs: depth + subtle inset */
-body.dark input[type="number"], body.dark input[type="text"], body.dark select{
-  background: rgba(2,6,23,.55);
-  border-color: rgba(148,163,184,.20);
-}
-body.dark input[type="number"]:focus, body.dark input[type="text"]:focus, body.dark select:focus{
-  box-shadow: 0 0 0 2px rgba(59,130,246,.55);
+.chip.ok { background: var(--green-bg); border-color: rgba(16,185,129,.2); color: #059669; }
+.chip.warn { background: var(--red-bg); border-color: rgba(239,68,68,.2); color: var(--red); }
+.chip .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
-/* Copy icon buttons: better contrast in dark */
-body.dark .icon-copy-btn{
-  background: rgba(255,255,255,.02);
-  border-color: rgba(148,163,184,.18);
+/* ═══ CARDS ═══ */
+.card {
+  background: var(--surface);
+  border-radius: var(--card-radius);
+  padding: 20px;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
+  margin-bottom: 14px;
+  transition: all .2s;
 }
-body.dark .icon-copy-btn:hover{
-  background: rgba(255,255,255,.08);
-  border-color: rgba(148,163,184,.24);
+.card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-/* Button icons */
-.btn .btn-ico{
-  width:16px;height:16px;
-  margin-right:8px;
-  vertical-align:-2px;
-  opacity:.95;
+.card h3 .card-icon {
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
-.btn span{ vertical-align:middle; }
-.icon-copy-btn{
-  transition: background .15s ease, border-color .15s ease, transform .08s ease;
-}
-.icon-copy-btn:active{ transform:scale(.98); }
+.card h3 .card-icon svg { width: 18px; height: 18px; }
+.card h3 .card-icon.purple { background: var(--accent-light); color: var(--accent); }
+.card h3 .card-icon.green { background: var(--green-bg); color: var(--green); }
+.card h3 .card-icon.amber { background: var(--amber-bg); color: var(--amber); }
 
-/* === Uniform card color (light mode) === */
-body:not(.dark) .card{
-  background:#ffffff !important;
-}
-body:not(.dark) .card.secondary{
-  background:#ffffff !important;
-}
-body:not(.dark) .card[style*="background"]{
-  background:#ffffff !important;
+.card h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
 }
 
+/* ═══ FORM ELEMENTS ═══ */
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: .2px;
+}
+.input-group {
+  position: relative;
+  margin-bottom: 14px;
+}
+.input-group .input-prefix {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  pointer-events: none;
+  z-index: 2;
+}
+input[type="number"], input[type="text"], select {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px 0 44px;
+  border-radius: var(--input-radius);
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface-alt);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  transition: all .2s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type="number"]:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: var(--surface);
+}
+select {
+  padding: 0 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 6l3.5 4 3.5-4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
 
-/* === Remove pink border on first card (uniform borders) === */
-.card.primary{
-  border-color: rgba(0,0,0,.06) !important;
+/* Rate inputs (in hero cards) */
+.rate-input {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  height: 52px !important;
+  background: var(--surface) !important;
+  border: 1.5px solid var(--accent) !important;
 }
-body.dark .card.primary{
-  border-color: rgba(148,163,184,.16) !important;
+
+/* Hidden rate input class */
+.auto-rate { display: none; }
+
+/* ═══ RESULT PILLS ═══ */
+.results-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
+.result-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  transition: all .15s;
+}
+.result-pill .rp-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.result-pill .rp-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ═══ COPY BUTTONS ═══ */
+.icon-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  transition: all .15s;
+  padding: 0;
+  flex-shrink: 0;
+}
+.icon-copy-btn:active { transform: scale(.9); background: var(--accent-light); }
+.icon-copy-btn svg { width: 15px; height: 15px; }
+
+/* ═══ BUTTONS ═══ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all .15s;
+  -webkit-appearance: none;
+}
+.btn:active { transform: scale(.96); }
+.btn.neutral {
+  background: var(--accent);
+  color: #fff;
+}
+.btn.ok { background: var(--green); color: #fff; }
+.btn.reset {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1.5px dashed var(--border-strong);
+}
+.btn .btn-ico { width: 16px; height: 16px; }
+
+.copy-btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all .15s;
+}
+.copy-btn:active { transform: scale(.96); background: var(--accent-light); }
+
+/* ═══ SEPARATORS ═══ */
+.sep { height: 1px; background: var(--border); margin: 16px 0; }
+
+/* ═══ PILL (legacy compat) ═══ */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.pill span { font-weight: 700; color: var(--text); }
+
+/* ═══ ROW helpers ═══ */
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ═══ GRID (legacy compat) ═══ */
+.grid { display: flex; flex-direction: column; gap: 0; }
+.md-6, .md-4, .md-8, .md-3, .md-12 { /* no-op on mobile */ }
+
+/* ═══ RATE ANIMATION ═══ */
+.rate-updated { animation: ratePulse .6s ease; }
+@keyframes ratePulse {
+  0% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  100% { box-shadow: 0 0 0 12px transparent; }
+}
+
+/* Rate card pulse */
+.rate-card-pulse {
+  animation: cardPulse .6s ease;
+}
+@keyframes cardPulse {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+/* ═══ UPDATE BUTTON (floating) ═══ */
+.fab-refresh {
+  position: fixed;
+  bottom: calc(var(--sab) + 20px);
+  right: 20px;
+  z-index: 90;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(79,70,229,.35), 0 8px 32px rgba(79,70,229,.15);
+  transition: all .2s;
+}
+.fab-refresh:active { transform: scale(.9); }
+.fab-refresh svg { width: 24px; height: 24px; }
+.fab-refresh.spinning svg {
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══ FOOTER ═══ */
+.footer {
+  text-align: center;
+  padding: 20px 0;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* ═══ MUTED ═══ */
+.muted { color: var(--text-secondary); font-size: 13px; }
+
+/* ═══ SECTION TITLES ═══ */
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-tertiary);
+  margin: 20px 0 10px;
+  padding-left: 4px;
+}
+
+/* ═══ CONVERSION INPUT ROW ═══ */
+.conv-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 360px) {
+  .conv-row { grid-template-columns: 1fr; }
+}
+
+/* ═══ DETAIL STATS ═══ */
+.stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.stat-box {
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+.stat-box .stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+.stat-box .stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══ EXT CONVERSION ═══ */
+.ext-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.ext-result:last-child { border-bottom: none; }
+.ext-result .er-label { color: var(--text-secondary); font-weight: 500; }
+.ext-result .er-value { font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+
+/* ═══ ACTIONS ROW ═══ */
+.actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* ══════════════════════════════════════════
+   DARK MODE
+   ══════════════════════════════════════════ */
+body.dark {
+  --bg: #0c0f16;
+  --surface: #161b26;
+  --surface-alt: #111620;
+  --text: #edf0f7;
+  --text-secondary: #8896ab;
+  --text-tertiary: #5a6577;
+  --border: rgba(255,255,255,.06);
+  --border-strong: rgba(255,255,255,.10);
+  --accent: #818cf8;
+  --accent-light: rgba(129,140,248,.12);
+  --accent-glow: rgba(129,140,248,.2);
+  --card-shadow: 0 2px 8px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.2);
+}
+body.dark {
+  background:
+    radial-gradient(ellipse 800px 400px at 20% 0%, rgba(79,70,229,.12), transparent 60%),
+    radial-gradient(ellipse 600px 300px at 80% 10%, rgba(16,185,129,.08), transparent 55%),
+    var(--bg);
+}
+body.dark header.app-header {
+  background: rgba(12,15,22,.8);
+  border-color: rgba(255,255,255,.06);
+}
+body.dark .fab-refresh {
+  background: #818cf8;
+  box-shadow: 0 4px 16px rgba(129,140,248,.3), 0 8px 32px rgba(129,140,248,.12);
+}
+body.dark select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238896ab' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 6l3.5 4 3.5-4z'/%3E%3C/svg%3E");
+}
+body.dark .chip.ok { color: #34d399; }
+
+/* ═══ PRINT ═══ */
+@media print {
+  header, .fab-refresh, .footer, .copy-btn, .icon-copy-btn, .btn.reset { display: none !important; }
+  body { background: #fff; }
+  .card { box-shadow: none !important; border: 1px solid #ddd; }
+}
+
+/* ═══ DESKTOP ═══ */
+@media (min-width: 900px) {
+  .app { max-width: 520px; }
+  .rate-hero { gap: 12px; }
+}
+
+/* Prevent zoom on input focus (iOS) */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  input[type="number"], select { font-size: 16px; }
+}
+
+/* UD highlight */
+.ud { background: var(--accent-light) !important; font-weight: 600; }
+
+/* Center actions */
+.center-actions { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+
+/* Mono */
+.mono { font-variant-numeric: tabular-nums; }
+#vinil_summary strong { transition: opacity .15s ease; }
+#vinil_summary strong.upd { opacity: .25; }
+
+/* Hide nav — single module */
+nav { display: none; }
+
+/* Ensure legacy classes don't break */
+.primary, .secondary, .neutral { /* handled by .card */ }
+.result-inline { display: inline-flex; align-items: center; gap: 6px; }
 
 </style>
 
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#ff7aa2">
+<meta name="theme-color" content="#4f46e5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Divisas BCV">
 <link rel="apple-touch-icon" href="icon-180.png">
 <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      // Registrar el Service Worker con un parámetro de versión para forzar actualización en navegadores.
-      navigator.serviceWorker.register('sw.js?v=4');
-    });
-  }
+  // SW registration is handled by the PWA versioning system below
 </script>
-
 </head>
 <body>
 <div class="app">
-<header class=\"app-header\">
-<h1>Divisas BCV / Paralelo</h1>
 
-<div class="header-right" style="display:flex;gap:8px;align-items:center">
-<label class="dark-toggle-pill"><input id="dark_toggle" type="checkbox"/><svg aria-hidden="true" class="dt-ico dt-moon" viewbox="0 0 24 24"><path d="M21 14.3A8.7 8.7 0 0 1 9.7 3a7.7 7.7 0 1 0 11.3 11.3Z" fill="currentColor"></path></svg><svg aria-hidden="true" class="dt-ico dt-sun" viewbox="0 0 24 24">
-<circle cx="12" cy="12" fill="none" r="5" stroke="currentColor" stroke-width="2"></circle>
-<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
-</svg><span>Modo oscuro</span></label>
-<button class="icon-top-btn" id="btn_reset_general" type="button" title="Reset general" aria-label="Reset general"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><path d="M21 3v6h-6"></path></svg></button></div>
+<!-- ═══ HEADER ═══ -->
+<header class="app-header">
+  <h1>💱 Divisas BCV</h1>
+  <div class="header-right">
+    <label class="dark-toggle-pill">
+      <input id="dark_toggle" type="checkbox"/>
+      <svg aria-hidden="true" class="dt-ico dt-moon" viewBox="0 0 24 24"><path d="M21 14.3A8.7 8.7 0 0 1 9.7 3a7.7 7.7 0 1 0 11.3 11.3Z" fill="currentColor"/></svg>
+      <svg aria-hidden="true" class="dt-ico dt-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" fill="none" r="5" stroke="currentColor" stroke-width="2"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/></svg>
+      <span>Modo oscuro</span>
+    </label>
+    <button class="icon-top-btn" id="btn_reset_general" type="button" title="Reset general" aria-label="Reset general">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+    </button>
+  </div>
 </header>
-<!-- DIVISAS -->
+
+<!-- ═══ DIVISAS VIEW ═══ -->
 <section class="view active" id="view-divisas">
-<div class="grid">
-<div class="card md-6 primary">
-<h3 style="display:flex;align-items:center;justify-content:space-between">Tasas
-  <!-- Botón para actualizar las tasas de cambio automáticamente. Al hacer clic se ejecuta la función fetchRates() que consulta la tasa oficial del BCV vía API y la tasa de compra USD/VES desde Saldoar a través de un proxy CORS. -->
-<button class="btn neutral" id="btn_refresh_rates" style="margin-left:auto;font-size:12px;padding:6px 10px"><svg aria-hidden="true" class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><path d="M21 3v6h-6"></path></svg><span>Actualizar tasas</span></button>
-</h3>
-<div class="muted" id="rates_last_update" style="margin:-6px 0 6px">Actualizado: —</div><div class="rate-meta-row"><span class="chip" id="chip_online">—</span><span class="chip" id="chip_source">Fuente Paralelo: Binance P2P</span></div>
-<!-- Selector de moneda y tasas -->
-<div class="row">
-<div style="flex:1;min-width:220px">
-<!-- Selector de moneda base para BCV -->
-<label>Moneda de cálculo (BCV)</label>
-<select id="moneda_bcv" style="width:100%;padding:12px;border-radius:12px;font-size:14px">
-<option selected="" value="USD">Dólar (USD)</option>
-<option value="EUR">Euro (EUR)</option>
-</select>
+
+  <!-- Rate hero cards -->
+  <div class="rate-hero" id="rate_hero_row">
+    <div class="rate-card usd" id="hero_usd">
+      <div class="rate-label">$ BCV</div>
+      <div class="rate-prefix">Bs/USD</div>
+      <div class="rate-value" id="hero_usd_val">—</div>
+    </div>
+    <div class="rate-card eur" id="hero_eur">
+      <div class="rate-label">€ BCV</div>
+      <div class="rate-prefix">Bs/EUR</div>
+      <div class="rate-value" id="hero_eur_val">—</div>
+    </div>
+    <div class="rate-card par" id="hero_par">
+      <div class="rate-label">$ Paralelo</div>
+      <div class="rate-prefix">Bs/USD</div>
+      <div class="rate-value" id="hero_par_val">—</div>
+    </div>
+  </div>
+
+  <!-- Meta chips -->
+  <div class="meta-row">
+    <span class="chip" id="chip_online"><span class="dot"></span> —</span>
+    <span class="chip" id="chip_source">Paralelo: Binance P2P</span>
+    <span class="chip" id="chip_eur_source">€: DolarAPI</span>
+  </div>
+  <div class="muted" id="rates_last_update" style="margin-bottom:14px;font-size:12px">Actualizado: —</div>
+
+  <!-- Hidden real rate inputs (IDs preserved for JS logic) -->
+  <div class="rate-inputs-hidden">
+    <input class="rate-input auto-rate" id="tasa_bcv" min="0" step="0.01" type="number" value="189.26"/>
+    <input class="rate-input auto-rate" id="tasa_euro_bcv" min="0" step="0.01" type="number" value=""/>
+    <input class="rate-input auto-rate" id="tasa_paralelo" min="0" step="0.01" type="number" value="299.80"/>
+  </div>
+
+  <!-- ── Tasas Card ── -->
+  <div class="card primary" id="card_tasas">
+    <h3>
+      <span class="card-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+      Tasas
+      <button class="btn neutral" id="btn_refresh_rates" style="margin-left:auto;font-size:12px;padding:0 12px;height:36px;border-radius:10px">
+        <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        <span>Actualizar</span>
+      </button>
+    </h3>
+
+    <label>Moneda de cálculo</label>
+    <select id="moneda_bcv" style="margin-bottom:14px;padding-left:14px">
+      <option selected value="USD">🇺🇸 Dólar (USD)</option>
+      <option value="EUR">🇪🇺 Euro (EUR)</option>
+    </select>
+
+    <div class="sep"></div>
+    <div class="result-pill" style="margin-top:4px">
+      <span class="rp-label">Equivalente Paralelo</span>
+      <span class="rp-value"><span id="equiv_paralelo">—</span></span>
+    </div>
+  </div>
+
+  <!-- ── Conversión rápida ── -->
+  <div class="card secondary">
+    <h3>
+      <span class="card-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span>
+      Conversión rápida
+    </h3>
+
+    <div class="conv-row">
+      <div>
+        <label id="label_monto">Monto en $</label>
+        <div class="input-group">
+          <span class="input-prefix" id="symbol_monto">$</span>
+          <input id="monto_usd" min="0" step="0.01" type="number" placeholder="0.00"/>
+        </div>
+      </div>
+      <div>
+        <label>Monto en Bs (BCV)</label>
+        <div class="input-group">
+          <span class="input-prefix">Bs</span>
+          <input id="monto_bs_bcv" min="0" step="0.01" type="number" placeholder="0.00"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-grid">
+      <div class="result-pill">
+        <span class="rp-label">En Bs (BCV)</span>
+        <span class="rp-value">
+          <span id="bs_bcv">—</span>
+          <button class="icon-copy-btn" id="btn_copy_bs_bcv" type="button" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"/><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg></button>
+        </span>
+      </div>
+      <div class="result-pill">
+        <span class="rp-label">En Bs (Paralelo)</span>
+        <span class="rp-value">
+          <span id="bs_paralelo">—</span>
+          <button class="icon-copy-btn" id="btn_copy_bs_paralelo" type="button" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"/><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg></button>
+        </span>
+      </div>
+      <div class="result-pill" id="usd_desde_bs_wrapper">
+        <span class="rp-label">En $ desde Bs(BCV)</span>
+        <span class="rp-value">
+          <span id="usd_desde_bs">—</span>
+          <button class="icon-copy-btn" id="btn_copy_usd_desde_bs" type="button" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"/><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg></button>
+        </span>
+      </div>
+    </div>
+
+    <div class="actions-row">
+      <button class="copy-btn" id="btn_copy_div">📋 Copiar resultados</button>
+      <button class="btn reset" id="btn_reset_div">Limpiar</button>
+    </div>
+  </div>
+
+  <!-- ── Paralelo ↔ BCV ── -->
+  <div class="card">
+    <h4>Conversión Paralelo ↔ BCV</h4>
+    <div class="conv-row" style="margin-bottom:8px">
+      <div>
+        <label id="label_valor_paralelo_ext">Monto Paralelo</label>
+        <div class="input-group">
+          <span class="input-prefix" id="symbol_paralelo_ext">$</span>
+          <input id="usd_paralelo_input" min="0" placeholder="0.00" step="0.01" type="number"/>
+        </div>
+      </div>
+      <div>
+        <label id="label_valor_bcv_ext">Monto BCV</label>
+        <div class="input-group">
+          <span class="input-prefix" id="symbol_bcv_ext">$</span>
+          <input id="usd_bcv_input" min="0" placeholder="0.00" step="0.01" type="number"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="ext-result">
+      <span class="er-label">Equiv. en BCV</span>
+      <span class="er-value">
+        <span id="equiv_en_bcv_ext">-</span>
+        <button class="icon-copy-btn" id="btn_copy_equiv_en_bcv_ext" type="button" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"/><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg></button>
+      </span>
+    </div>
+    <div class="ext-result">
+      <span class="er-label">Equiv. en Paralelo</span>
+      <span class="er-value">
+        <span id="equiv_en_paralelo_ext">-</span>
+        <button class="icon-copy-btn" id="btn_copy_equiv_en_paralelo_ext" type="button" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"/><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg></button>
+      </span>
+    </div>
+    <div class="ext-result">
+      <span class="er-label">Valor en Bs (BCV)</span>
+      <span class="er-value">
+        <span id="valor_bs_tasa_bcv_ext">-</span>
+        <button class="icon-copy-btn" id="btn_copy_valor_bs_tasa_bcv_ext" type="button" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"/><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg></button>
+      </span>
+    </div>
+  </div>
+
+  <!-- ── Detalle ── -->
+  <div class="card md-12 neutral">
+    <h3>
+      <span class="card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg></span>
+      Detalle
+    </h3>
+    <div class="stat-row">
+      <div class="stat-box" id="diff_label">
+        <div class="stat-label">Diferencia <span id="diff_currency_symbol">$</span></div>
+        <div class="stat-value" id="diff_bs">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Brecha</div>
+        <div class="stat-value" id="gap_pct">—</div>
+      </div>
+    </div>
+    <div class="center-actions">
+      <button class="copy-btn" id="btn_copy_resumen">📋 Copiar resumen</button>
+      <button class="copy-btn" id="btn_print_resumen">🖨 Exportar PDF</button>
+    </div>
+  </div>
+
+  <!-- ── Actualizaciones PWA ── -->
+  <div class="card">
+    <h3>
+      <span class="card-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><polyline points="12 6 12 12 16 14"/></svg></span>
+      Actualizaciones
+    </h3>
+    <p style="font-size:12px;color:var(--text-secondary);margin:-8px 0 12px">Verifica e instala nuevas versiones sin perder datos.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn neutral" id="btn_pwa_check_updates" type="button" style="height:38px;font-size:13px;padding:0 14px;border-radius:10px">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Buscar
+      </button>
+      <button class="btn ok" id="btn_pwa_apply_update" type="button" style="display:none;height:38px;font-size:13px;padding:0 14px;border-radius:10px">⬆ Aplicar</button>
+      <span style="font-size:12px;color:var(--text-secondary)" id="pwa_update_status">—</span>
+    </div>
+  </div>
+
+  <!-- ── Versión ── -->
+  <div class="card" style="opacity:.65">
+    <div style="display:flex;align-items:center;gap:8px">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text-tertiary)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span style="font-size:12px;color:var(--text-secondary)">Divisas BCV · <span id="version_label">v1.0</span> · Tasas · Conversión · Paralelo ↔ BCV</span>
+    </div>
+  </div>
+
+</section>
 </div>
-</div>
-<div class="row">
-<div style="flex:1;min-width:220px">
-<!-- Tasa oficial en dólares -->
-<label>Precio BCV (Bs por $)</label>
-<div class="row" style="align-items:center;gap:6px">
-<span class="pill">Bs</span>
-<input class="rate-input auto-rate" id="tasa_bcv" min="0" step="0.01" type="number" value="189.26"/>
-</div>
-</div>
-<div style="flex:1;min-width:220px">
-<!-- Tasa oficial en euros -->
-<label>Precio Euro BCV (Bs por €)</label>
-<div class="row" style="align-items:center;gap:6px">
-<span class="pill">Bs</span>
-<input class="rate-input auto-rate" id="tasa_euro_bcv" min="0" step="0.01" type="number" value=""/>
-</div>
-</div>
-<div style="flex:1;min-width:220px">
-<!-- Tasa paralela -->
-<label>Precio Paralelo (Bs por $)</label>
-<div class="row" style="align-items:center;gap:6px">
-<span class="pill">Bs</span>
-<input class="rate-input auto-rate" id="tasa_paralelo" min="0" step="0.01" type="number" value="299.80"/>
-</div>
-</div>
-</div>
-<div class="sep"></div>
-<div class="row"><div class="pill">Equivalente en Paralelo: <span id="equiv_paralelo">—</span></div></div>
-</div>
-<div class="card md-6 secondary">
-<h3>Conversión rápida</h3>
-<div class="row">
-<div style="flex:1;min-width:220px">
-<label id="label_monto">Monto en $</label>
-<div class="row" style="align-items:center;gap:6px">
-<span class="pill" id="symbol_monto">$</span>
-<input id="monto_usd" min="0" step="0.01" type="number">
-</input></div>
-</div>
-<div style="flex:1;min-width:220px">
-<label>Monto en Bs (BCV)</label>
-<div class="row" style="align-items:center;gap:6px">
-<span class="pill">Bs</span>
-<input id="monto_bs_bcv" min="0" step="0.01" type="number">
-</input></div>
-</div>
-</div>
-<div class="sep"></div>
-<div class="row" style="gap:10px;align-items:center;flex-wrap:wrap">
-<div class="pill">En Bs (BCV): <span id="bs_bcv">—</span><button class="icon-copy-btn" id="btn_copy_bs_bcv" type="button" title="Copiar En Bs (BCV)"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg></button></div>
-<div class="pill">En Bs (Paralelo): <span id="bs_paralelo">—</span><button class="icon-copy-btn" id="btn_copy_bs_paralelo" type="button" title="Copiar En Bs (Paralelo)"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg></button></div>
-<div class="pill" id="usd_desde_bs_wrapper">En $ desde Bs(BCV): <span id="usd_desde_bs">—</span><button class="icon-copy-btn" id="btn_copy_usd_desde_bs" type="button" title="Copiar En divisa desde Bs(BCV)"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg></button></div>
-<button class="copy-btn" id="btn_copy_div">Copiar resultados</button>
-</div>
-<div class="sep"></div>
-<div class="row" style="margin-top:12px">
-<button class="btn reset" id="btn_reset_div">Reset</button>
-</div>
-</div>
-<div class="card" style="padding:14px;background:#fafafa;border:1px solid #eee">
-<h4 style="margin:0 0 8px">Conversión rápida — modo paralelo / BCV</h4>
-<div class="row" style="gap:12px;flex-wrap:wrap">
-<div style="flex:1;min-width:260px">
-<label id="label_valor_paralelo_ext">Valor en dólar Paralelo:</label>
-<div class="row" style="align-items:center;gap:6px">
-<span class="pill" id="symbol_paralelo_ext">$</span>
-<input id="usd_paralelo_input" min="0" placeholder="Ingrese monto en Paralelo" step="0.01" type="number">
-</input></div>
-<div class="muted" style="margin-top:8px">Equivalente en BCV: <span id="equiv_en_bcv_ext">-</span><button class="icon-copy-btn" id="btn_copy_equiv_en_bcv_ext" type="button" title="Copiar Equivalente en BCV"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg></button></div>
-</div>
-<div style="flex:1;min-width:260px">
-<label id="label_valor_bcv_ext">Valor en dólar BCV:</label>
-<div class="row" style="align-items:center;gap:6px">
-<span class="pill" id="symbol_bcv_ext">$</span>
-<input id="usd_bcv_input" min="0" placeholder="Ingrese monto en BCV" step="0.01" type="number"/>
-</div>
-<div class="muted" style="margin-top:8px">Equivalente en Paralelo: <span id="equiv_en_paralelo_ext">-</span><button class="icon-copy-btn" id="btn_copy_equiv_en_paralelo_ext" type="button" title="Copiar Equivalente en Paralelo"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg></button></div>
-<div class="muted" style="margin-top:6px"><strong>Valor en Bs tasa BCV:</strong> <span id="valor_bs_tasa_bcv_ext">-</span><button class="icon-copy-btn" id="btn_copy_valor_bs_tasa_bcv_ext" type="button" title="Copiar Valor en Bs tasa BCV"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg></button></div>
-</div>
-</div>
-</div>
-<div class="card md-12 neutral">
-<h3>Detalle adicional</h3>
-<div class="row" style="gap:14px;flex-wrap:wrap">
-<div class="pill" id="diff_label">Diferencia (Paralelo - BCV) en Bs por <span id="diff_currency_symbol">$</span>: <span id="diff_bs">—</span></div>
-<div class="pill">Brecha %: <span id="gap_pct">—</span></div>
-<div class="center-actions" style="margin-top:10px">
-<button class="copy-btn" id="btn_copy_resumen">Copiar resumen</button>
-<button class="copy-btn" id="btn_print_resumen">Exportar a PDF / Imprimir</button>
-</div>
-</div>
-</div>
-</div></section>
-</div>
+
+<!-- Floating refresh button -->
+<button class="fab-refresh" id="fab_refresh" type="button" title="Actualizar tasas" aria-label="Actualizar tasas">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+</button>
+
 <footer class="footer">Suite creada por @subli_mada</footer>
 
 <script>
-
-// ============ Helpers (formato, UI, clipboard) ============
+// ============ Helpers ============
 const USD_FMT = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
 const BS_FMT  = new Intl.NumberFormat('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2});
 function fmtUSD(n){return USD_FMT.format(isFinite(n)?n:0)}
@@ -598,16 +908,39 @@ function parseNum(v){ if(typeof v==='number') return v; if(!v) return 0; v=Strin
 
 function copyText(t){
   if(navigator.clipboard && window.isSecureContext){
-    navigator.clipboard.writeText(t).then(()=>alert('Copiado')).catch(()=>fallbackCopy(t));
+    navigator.clipboard.writeText(t).then(()=>showToast('Copiado ✓')).catch(()=>fallbackCopy(t));
   }else{ fallbackCopy(t); }
 }
 function fallbackCopy(t){
   const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.left='-9999px';
   document.body.appendChild(ta); ta.focus(); ta.select();
-  try{ document.execCommand('copy'); alert('Copiado'); }catch(e){ alert('No se pudo copiar');}
+  try{ document.execCommand('copy'); showToast('Copiado ✓'); }catch(e){ showToast('No se pudo copiar');}
   document.body.removeChild(ta);
 }
+function showToast(msg){
+  let t = document.getElementById('_toast');
+  if(!t){ t=document.createElement('div'); t.id='_toast'; document.body.appendChild(t);
+    Object.assign(t.style,{position:'fixed',bottom:'90px',left:'50%',transform:'translateX(-50%) translateY(20px)',
+      padding:'10px 20px',borderRadius:'12px',background:'var(--text)',color:'var(--bg)',
+      fontSize:'13px',fontWeight:'600',fontFamily:'inherit',opacity:'0',transition:'all .3s',zIndex:'999',
+      pointerEvents:'none',whiteSpace:'nowrap'});
+  }
+  t.textContent=msg; t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)';
+  clearTimeout(t._tid);
+  t._tid=setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; },1800);
+}
 function qs(id){return document.getElementById(id)}
+
+// ============ Hero card sync ============
+function syncHeroCards(){
+  const usd = parseFloat(qs('tasa_bcv').value);
+  const eur = parseFloat(qs('tasa_euro_bcv').value);
+  const par = parseFloat(qs('tasa_paralelo').value);
+  const fmt = (n) => isFinite(n) && n>0 ? BS_FMT.format(n) : '—';
+  qs('hero_usd_val').textContent = fmt(usd);
+  qs('hero_eur_val').textContent = fmt(eur);
+  qs('hero_par_val').textContent = fmt(par);
+}
 
 // Dark mode
 (function initDark(){
@@ -616,40 +949,28 @@ function qs(id){return document.getElementById(id)}
   t&&t.addEventListener('change',()=>{const on=t.checked;document.body.classList.toggle('dark',on);localStorage.setItem('dark_on',on?'1':'0');});
 })();
 
-// ============ Navegación ============
+// ============ Nav (compat) ============
 (function initNav(){
   const buttons=[...document.querySelectorAll('nav button')];
   const views={divisas:qs('view-divisas'),vinil:qs('view-vinil'),basica:qs('view-basica'),sublimacion:qs('view-sublimacion'),etiquetas:qs('view-etiquetas'),empaques:qs('view-empaques'),resumen:qs('view-resumen')};
   buttons.forEach(btn=>btn.addEventListener('click',()=>{
     buttons.forEach(b=>b.classList.remove('active')); btn.classList.add('active');
-    // Esta versión es “solo módulo”, así que algunas vistas pueden no existir.
     Object.values(views).forEach(v=>{ if(v) v.classList.remove('active'); });
     const target = views[btn.dataset.view];
     if (target) target.classList.add('active');
   }));
 })();
-
-
-
-// Navegación mínima (solo Divisas)
 (function(){
   const btn = document.querySelector('nav button');
   const view = document.getElementById('view-divisas');
-  btn?.addEventListener('click', ()=> {
-    btn.classList.add('active');
-    view.classList.add('active');
-  });
+  btn?.addEventListener('click', ()=> { btn.classList.add('active'); view.classList.add('active'); });
 })();
 
-// ============ DIVISAS (con formato y persistencia) ============
-// Incluir la tasa en euros y la moneda seleccionada para persistencia
+// ============ DIVISAS ============
 const DIV_KEYS=['tasa_bcv','tasa_paralelo','tasa_euro_bcv','moneda_bcv','monto_usd','monto_bs_bcv'];
 function divisas_save(){
   const d = {};
-  DIV_KEYS.forEach(id => {
-    const el = qs(id);
-    if (el) d[id] = el.value;
-  });
+  DIV_KEYS.forEach(id => { const el = qs(id); if (el) d[id] = el.value; });
   localStorage.setItem('divisas_state', JSON.stringify(d));
 }
 function divisas_load(){
@@ -657,15 +978,10 @@ function divisas_load(){
   if(!raw) return;
   try{
     const d = JSON.parse(raw);
-    Object.keys(d).forEach(id => {
-      if (qs(id) && d[id] !== undefined) {
-        qs(id).value = d[id];
-      }
-    });
+    Object.keys(d).forEach(id => { if (qs(id) && d[id] !== undefined) qs(id).value = d[id]; });
   }catch(e){}
 }
 function divisas_toText(){
-  // Construir un resumen incluyendo la moneda seleccionada y ambas tasas oficiales
   const items = [
     ['Moneda de cálculo', qs('moneda_bcv')?.value || 'USD'],
     ['Precio BCV (USD)', qs('tasa_bcv').value],
@@ -679,22 +995,18 @@ function divisas_toText(){
     ['Equiv. en Paralelo (desde BCV)', qs('equiv_en_paralelo_ext').textContent],
     ['Valor en Bs tasa BCV (bloque ext.)', qs('valor_bs_tasa_bcv_ext').textContent]
   ];
-  return items.map(([k,v]) => k + ': ' + v).join('\\n');
+  return items.map(([k,v]) => k + ': ' + v).join('\n');
 }
 function divisas_update(origen){
-  // Determinar la tasa BCV según la moneda seleccionada
   const moneda = qs('moneda_bcv')?.value || 'USD';
   const bcvRate = parseFloat(moneda === 'EUR' ? qs('tasa_euro_bcv').value : qs('tasa_bcv').value);
   const par = parseFloat(qs('tasa_paralelo').value);
-  // Valor ingresado en la divisa seleccionada
   const monto = parseFloat(qs('monto_usd').value);
   const bs_bcv_input = parseFloat(qs('monto_bs_bcv').value);
 
-  // Calcular la equivalencia entre la tasa paralela y la oficial seleccionada
   const equiv = (isFinite(par) && isFinite(bcvRate) && bcvRate !== 0) ? (par / bcvRate) : null;
   qs('equiv_paralelo').textContent = equiv ? (equiv.toFixed(4) + '×') : '—';
 
-  // Conversión de Bs a divisa seleccionada
   if (origen === 'desde_bs' && isFinite(bcvRate) && bcvRate !== 0) {
     const div_from_bs = bs_bcv_input / bcvRate;
     qs('usd_desde_bs').textContent = moneda === 'EUR' ? fmtUSD(div_from_bs).replace('$','€') : fmtUSD(div_from_bs);
@@ -702,18 +1014,15 @@ function divisas_update(origen){
     qs('usd_desde_bs').textContent = '—';
   }
 
-  // Conversión a Bs con tasa oficial y paralela
   const bsBCV = (isFinite(bcvRate) && isFinite(monto)) ? monto * bcvRate : null;
   const bsPar = (isFinite(par) && isFinite(monto)) ? monto * par : null;
   qs('bs_bcv').textContent = bsBCV ? fmtBs(bsBCV) : '—';
   qs('bs_paralelo').textContent = bsPar ? fmtBs(bsPar) : '—';
 
-  // Diferencia absoluta y brecha porcentual (numérica)
   const diff = (isFinite(par) && isFinite(bcvRate)) ? (par - bcvRate) : null;
   qs('diff_bs').textContent = diff ? fmtBs(diff) : '—';
   qs('gap_pct').textContent = (isFinite(par) && isFinite(bcvRate) && bcvRate !== 0) ? (((par - bcvRate) / bcvRate) * 100).toFixed(2) + '%' : '—';
 
-  // Conversión extendida
   const usdParIn = parseFloat(qs('usd_paralelo_input').value);
   const usdBcvIn = parseFloat(qs('usd_bcv_input').value);
   if (isFinite(usdParIn) && isFinite(par) && isFinite(bcvRate) && bcvRate !== 0) {
@@ -731,65 +1040,43 @@ function divisas_update(origen){
     qs('valor_bs_tasa_bcv_ext').textContent = '-';
   }
   divisas_save();
+  syncHeroCards();
 }
 function divisas_reset(){
-  // Limpiar los campos de tasas y montos
-  DIV_KEYS.forEach(id => {
-    const el = qs(id);
-    if (el) el.value = '';
-  });
-  // Restaurar moneda por defecto
+  DIV_KEYS.forEach(id => { const el = qs(id); if (el) el.value = ''; });
   if (qs('moneda_bcv')) qs('moneda_bcv').value = 'USD';
-  // Restablecer textos de resultados
   ['equiv_paralelo','bs_bcv','bs_paralelo','usd_desde_bs','diff_bs','gap_pct','equiv_en_bcv_ext','equiv_en_paralelo_ext','valor_bs_tasa_bcv_ext']
-    .forEach(id => {
-      if (qs(id)) qs(id).textContent = (id.includes('ext') ? '-' : '—');
-    });
+    .forEach(id => { if (qs(id)) qs(id).textContent = (id.includes('ext') ? '-' : '—'); });
   localStorage.removeItem('divisas_state');
   updateLabels();
+  syncHeroCards();
 }
 
-// ==== Utilidades de formato ====
-// Forzar un número a una cantidad fija de decimales cuando el usuario abandona el campo.
 function enforceDecimals(input, decimals = 2){
   let valStr = input.value;
   if(valStr === '') return;
-  // Normalizar comas y puntos: permitir que el usuario utilice coma como separador decimal
   valStr = valStr.replace(/,/g, '.');
   const val = parseFloat(valStr);
-  if(isFinite(val)){
-    input.value = val.toFixed(decimals);
-  }
+  if(isFinite(val)) input.value = val.toFixed(decimals);
 }
 
-// Actualiza las etiquetas y símbolos de los campos según la moneda seleccionada (USD o EUR).
 function updateLabels(){
   const moneda = qs('moneda_bcv')?.value || 'USD';
-  // Actualizar la etiqueta y el símbolo del campo de monto principal
   if(qs('label_monto')) qs('label_monto').textContent = moneda === 'EUR' ? 'Monto en €' : 'Monto en $';
   if(qs('symbol_monto')) qs('symbol_monto').textContent = moneda === 'EUR' ? '€' : '$';
-  // Actualizar la etiqueta y el símbolo del campo BCV de la sección extendida
-  if(qs('label_valor_bcv_ext')) qs('label_valor_bcv_ext').textContent = moneda === 'EUR' ? 'Valor en euro BCV:' : 'Valor en dólar BCV:';
+  if(qs('label_valor_bcv_ext')) qs('label_valor_bcv_ext').textContent = moneda === 'EUR' ? 'Monto BCV (€)' : 'Monto BCV ($)';
   if(qs('symbol_bcv_ext')) qs('symbol_bcv_ext').textContent = moneda === 'EUR' ? '€' : '$';
-  // Actualizar el prefijo del resultado de conversión de Bs a la divisa
   const wrapper = qs('usd_desde_bs_wrapper');
   if(wrapper){
-    const prefix = moneda === 'EUR' ? 'En € desde Bs(BCV): ' : 'En $ desde Bs(BCV): ';
-    const node = wrapper.childNodes[0];
-    if(node && node.nodeType === Node.TEXT_NODE){
-      node.nodeValue = prefix;
-    }else{
-      wrapper.insertBefore(document.createTextNode(prefix), wrapper.firstChild);
-      if(node) wrapper.removeChild(node);
-    }
+    const lbl = wrapper.querySelector('.rp-label');
+    if(lbl) lbl.textContent = moneda === 'EUR' ? 'En € desde Bs(BCV)' : 'En $ desde Bs(BCV)';
   }
-  // Actualizar el símbolo de la etiqueta de diferencia
   if(qs('diff_currency_symbol')) qs('diff_currency_symbol').textContent = moneda === 'EUR' ? '€' : '$';
 }
 
-qs('tasa_bcv').addEventListener('input',()=>divisas_update());
-qs('tasa_paralelo').addEventListener('input',()=>divisas_update());
-qs('tasa_euro_bcv')?.addEventListener('input',()=>divisas_update());
+qs('tasa_bcv').addEventListener('input',()=>{ divisas_update(); syncHeroCards(); });
+qs('tasa_paralelo').addEventListener('input',()=>{ divisas_update(); syncHeroCards(); });
+qs('tasa_euro_bcv')?.addEventListener('input',()=>{ divisas_update(); syncHeroCards(); });
 qs('monto_usd').addEventListener('input',()=>divisas_update());
 qs('monto_bs_bcv').addEventListener('input',()=>divisas_update('desde_bs'));
 qs('usd_paralelo_input')?.addEventListener('input',()=>divisas_update());
@@ -806,14 +1093,11 @@ function bindCopyBtn(btnId, textFn){
   const b = qs(btnId);
   if(!b) return;
   b.addEventListener('click', function(ev){
-    ev.preventDefault();
-    ev.stopPropagation();
+    ev.preventDefault(); ev.stopPropagation();
     const t = (typeof textFn === 'function') ? textFn() : String(textFn||'');
     if(t) copyText(t);
   });
 }
-
-// Copy icons (Conversión rápida)
 bindCopyBtn('btn_copy_bs_bcv', ()=>getTextById('bs_bcv'));
 bindCopyBtn('btn_copy_bs_paralelo', ()=>getTextById('bs_paralelo'));
 bindCopyBtn('btn_copy_usd_desde_bs', ()=>getTextById('usd_desde_bs'));
@@ -826,11 +1110,9 @@ divisas_load();
 updateLabels();
 divisas_update();
 
-// Enforce dos decimales en los campos de tasas al perder foco
 qs('tasa_bcv').addEventListener('blur',()=>enforceDecimals(qs('tasa_bcv'),2));
 qs('tasa_paralelo').addEventListener('blur',()=>enforceDecimals(qs('tasa_paralelo'),2));
 qs('tasa_euro_bcv')?.addEventListener('blur',()=>enforceDecimals(qs('tasa_euro_bcv'),2));
-// Ajustar a dos decimales las tasas cargadas desde el almacenamiento local
 enforceDecimals(qs('tasa_bcv'),2);
 enforceDecimals(qs('tasa_paralelo'),2);
 enforceDecimals(qs('tasa_euro_bcv'),2);
@@ -853,28 +1135,29 @@ function rates_pulse_inputs(){
       const el = qs(id);
       if(!el) return;
       el.classList.remove('rate-updated');
-      // reflow to restart animation
       void el.offsetWidth;
       el.classList.add('rate-updated');
       setTimeout(()=>{ try{ el.classList.remove('rate-updated'); }catch(e){} }, 750);
     });
+    // Pulse hero cards
+    document.querySelectorAll('.rate-card').forEach(c=>{
+      c.classList.remove('rate-card-pulse');
+      void c.offsetWidth;
+      c.classList.add('rate-card-pulse');
+      setTimeout(()=>c.classList.remove('rate-card-pulse'),700);
+    });
   }catch(e){}
 }
 
-// ============ Actualización automática de tasas ============
-// Función asíncrona para obtener las tasas actuales del BCV y de Saldoar.
+// ============ Fetch rates ============
 async function fetchRates(){
   const __force = !!window.__rates_force_next;
   window.__rates_force_next = 0;
+  const fab = qs('fab_refresh');
 
   try{
-    // =============================================================
-    // Regla: actualizar al cargar, al presionar “Actualizar tasas” y automático cada 1 hora.
-    // Este archivo ya llama fetchRates() al cargar y tiene un setInterval externo.
-    // Para cumplir “cada 1 hora” sin tocar código fuera de esta función, se aplica:
-    //  - Un programador interno a 1 hora (una sola vez)
-    //  - Un throttle de 1 hora para evitar llamadas más frecuentes (excepto click)
-    // =============================================================
+    if(fab) fab.classList.add('spinning');
+
     if (!window.__rates_hourly_bootstrapped) {
       window.__rates_hourly_bootstrapped = true;
       setTimeout(async function __tick(){
@@ -884,20 +1167,13 @@ async function fetchRates(){
     }
     const now = Date.now();
     const lastOk = parseInt(localStorage.getItem('rates_last_ok_ts') || '0', 10) || 0;
-    // Throttle: si NO es forzado, no volver a consultar si hace < 1 hora.
     if (!__force && lastOk && (now - lastOk) < (60 * 60 * 1000)) {
       divisas_update();
+      syncHeroCards();
+      if(fab) fab.classList.remove('spinning');
       return;
     }
 
-    // =============================================================
-    // 1) USD BCV (Bs por USD oficial) + 2) EUR BCV (Bs por EUR BCV real)
-    // Fuente primaria: API pública de DolarVZLA (incluye usd y eur en "current").
-    //   https://api.dolarvzla.com/public/exchange-rate
-    // Fallback USD: DolarAPI oficial (promedio)
-    // Fallback EUR: si no viene EUR, se usa cruce permitido
-    //   EUR_BCV = USD_BCV / (EUR_USD)   (EUR_USD = USD por 1 EUR)
-    // =============================================================
     let usdBcv = NaN;
     let eurBcv = NaN;
 
@@ -924,10 +1200,22 @@ async function fetchRates(){
       }
     }
 
-    // Reflejar USD BCV si hay dato
     if (isFinite(usdBcv)) qs('tasa_bcv').value = usdBcv.toFixed(2);
 
-    // 2) EUR BCV: si no viene directo, usar cruce permitido
+    // 2) EUR BCV: obtener tasa exacta del euro publicada por el BCV
+    // 2.a) Primario EUR: DolarAPI euro oficial (dato exacto BCV, sin cruce)
+    if (!isFinite(eurBcv)) {
+      try {
+        const eurResp = await fetch('https://corsproxy.io/?https://ve.dolarapi.com/v1/euros/oficial');
+        const eurData = await eurResp.json();
+        const eurVal = parseFloat(eurData?.promedio ?? eurData?.venta);
+        if (isFinite(eurVal) && eurVal > 0) eurBcv = eurVal;
+      } catch (e) {
+        console.error('EUR BCV: error DolarAPI euro oficial', e);
+      }
+    }
+
+    // 2.b) Fallback EUR: cruce permitido EUR_BCV = USD_BCV × (USD por 1 EUR)
     if (!isFinite(eurBcv) && isFinite(usdBcv)) {
       let eurUsd = NaN;
       try {
@@ -937,7 +1225,6 @@ async function fetchRates(){
       } catch (e) {
         console.error('EUR_USD: error open.er-api', e);
       }
-      // Fallback 2
       if (!isFinite(eurUsd) || eurUsd <= 0) {
         try {
           const fx2 = await fetch('https://corsproxy.io/?https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
@@ -947,8 +1234,6 @@ async function fetchRates(){
           console.error('EUR_USD: error fawaz', e);
         }
       }
-      // Calcular EUR_BCV multiplicando el precio USD_BCV por el tipo EUR_USD (USD por 1 EUR).
-      // Si se utiliza la división, el resultado se subestima (por ejemplo, 307 Bs por EUR en vez de ~439 Bs por EUR).
       if (isFinite(eurUsd) && eurUsd > 0) {
         eurBcv = usdBcv * eurUsd;
       }
@@ -956,29 +1241,17 @@ async function fetchRates(){
 
     if (isFinite(eurBcv)) qs('tasa_euro_bcv').value = eurBcv.toFixed(2);
 
-    // =============================================================
-    // 3) Paralelo = COMPRA USDT BINANCE P2P (Bs → USD)
-    // Regla estricta:
-    // - Usar SOLO Binance P2P
-    // - Tomar EXCLUSIVAMENTE binancep2p.ask (o totalAsk si existe)
-    // - NO promediar con otros exchanges
-    // =============================================================
+    // 3) Paralelo = COMPRA USDT BINANCE P2P
     let parRate = NaN;
-
-    // 3.a) Preferido: CriptoYa → Binance P2P
     try {
       const p2pResp = await fetch('https://corsproxy.io/?https://criptoya.com/api/USDT/VES/1');
       const p2pData = await p2pResp.json();
       const binance = p2pData?.binancep2p;
       const ask = parseFloat(binance?.totalAsk ?? binance?.ask);
-      if (isFinite(ask) && ask > 0) {
-        parRate = ask;
-      }
+      if (isFinite(ask) && ask > 0) parRate = ask;
     } catch (e) {
       console.error('Paralelo Binance P2P: error CriptoYa', e);
     }
-
-    // 3.b) Fallback: DolarAPI paralelo (COMPRA)
     if (!isFinite(parRate)) {
       try {
         const parResp = await fetch('https://corsproxy.io/?https://ve.dolarapi.com/v1/dolares/paralelo');
@@ -989,132 +1262,107 @@ async function fetchRates(){
         console.error('Paralelo fallback: error DolarAPI', e);
       }
     }
+    if (isFinite(parRate)) qs('tasa_paralelo').value = parRate.toFixed(2);
 
-    if (isFinite(parRate)) {
-      qs('tasa_paralelo').value = parRate.toFixed(2);
-    }
-
-    // Marcar última actualización exitosa (no rompe localStorage existente)
     if (isFinite(usdBcv) || isFinite(parRate)) {
       localStorage.setItem('rates_last_ok_ts', String(Date.now()));
       rates_render_last_update();
       rates_pulse_inputs();
     }
 
-    // Actualizar los cálculos después de modificar las tasas
     divisas_update();
+    syncHeroCards();
   }catch(err){
     console.error(err);
-    alert('No se pudieron actualizar las tasas. Verifique su conexión a Internet.');
+    showToast('Error al actualizar tasas');
+  }finally{
+    if(fab) fab.classList.remove('spinning');
   }
 }
 
-// Evento para el botón de refresco de tasas
+// Refresh buttons
 qs('btn_refresh_rates').addEventListener('click', ()=>{
   window.__rates_force_next = Date.now();
   fetchRates();
 });
-// Ejecutar la carga inicial y actualizar cada 15 minutos
+qs('fab_refresh').addEventListener('click', ()=>{
+  window.__rates_force_next = Date.now();
+  fetchRates();
+});
+
 rates_render_last_update();
 fetchRates();
 setInterval(fetchRates, 15 * 60 * 1000);
 
-
-
-
-// Evitar errores por botones inexistentes en esta versión
+// Remove non-existent buttons
 try{ document.getElementById('btn_copy_resumen')?.remove(); }catch(e){}
 try{ document.getElementById('btn_print_resumen')?.remove(); }catch(e){}
 
-// ============ Defaults + Reset general (top buttons) ============
+// ============ Defaults + Reset general ============
 (function initDefaultsAndReset(){
   try{
     document.querySelectorAll('input, select, textarea').forEach(function(el){
       if(el.id === 'dark_toggle') return;
-      if(el.type === 'number'){
-        el.value = '0';
-      }else if(el.tagName === 'SELECT'){
+      if(el.type === 'number') el.value = '0';
+      else if(el.tagName === 'SELECT'){
         if(el.id === 'moneda_bcv') { el.value = 'USD'; try{ el.dispatchEvent(new Event('change', {bubbles:true})); }catch(e){} }
-      }else{
-        el.value = '';
-      }
+      } else el.value = '';
     });
   }catch(e){}
 
   var btnReset = document.getElementById('btn_reset_general');
   if(btnReset){
     btnReset.addEventListener('click', function(){
-      try{
-        localStorage.removeItem('divisas_state');
-        localStorage.removeItem('rates_last_ok_ts');
-      }catch(e){}
-
+      try{ localStorage.removeItem('divisas_state'); localStorage.removeItem('rates_last_ok_ts'); }catch(e){}
       try{
         document.querySelectorAll('input, select, textarea').forEach(function(el){
           if(el.id === 'dark_toggle') return;
-          if(el.type === 'number'){
-            el.value = '0';
-          }else if(el.tagName === 'SELECT'){
+          if(el.type === 'number') el.value = '0';
+          else if(el.tagName === 'SELECT'){
             if(el.id === 'moneda_bcv') { el.value = 'USD'; try{ el.dispatchEvent(new Event('change', {bubbles:true})); }catch(e){} }
-          }else{
-            el.value = '';
-          }
+          } else el.value = '';
         });
       }catch(e){}
-
       try{
         ['tasa_bcv','tasa_paralelo','tasa_euro_bcv'].forEach(function(id){
-          var el = document.getElementById(id);
-          if(el) el.value = '0.00';
+          var el = document.getElementById(id); if(el) el.value = '0.00';
         });
       }catch(e){}
-
       try{
         if(typeof divisas_update === 'function') divisas_update();
-      try{ if(typeof divisas_apply_currency_ui==='function') divisas_apply_currency_ui(); }catch(e){}
-      try{ if(typeof divisas_currency_ui==='function') divisas_currency_ui(); }catch(e){}
-
+        try{ if(typeof divisas_apply_currency_ui==='function') divisas_apply_currency_ui(); }catch(e){}
+        try{ if(typeof divisas_currency_ui==='function') divisas_currency_ui(); }catch(e){}
       }catch(e){}
-
-      // Auto actualizar tasas después del reset
       try{
         if(typeof fetchRates === 'function') { window.__rates_force_next = Date.now(); fetchRates(); }
       }catch(e){}
+      syncHeroCards();
     });
   }
 })();
-/* === Header compacto en scroll (igual que Suite) === */
+
+// ============ Header compact on scroll ============
 (function(){
-  const header = document.querySelector('.app > header.app-header') || document.querySelector('header.app-header');
+  const header = document.querySelector('header.app-header');
   if (!header) return;
-
-  const mq = window.matchMedia('(max-width: 840px)');
-  const ENTER_Y = 80;  // Compactar al pasar esta altura
-  const EXIT_Y  = 5;   // Descompactar solo al volver casi arriba
+  const ENTER_Y = 60;
+  const EXIT_Y  = 5;
   let isCompact = false;
-
-  function applyState(shouldCompact){
-    if (shouldCompact === isCompact) return;
-    isCompact = shouldCompact;
-    if (isCompact) header.classList.add('header-compact');
-    else header.classList.remove('header-compact');
+  function applyState(sc){
+    if (sc === isCompact) return;
+    isCompact = sc;
+    header.classList.toggle('header-compact', isCompact);
   }
-
   function updateHeader(){
-    const y = window.scrollY || document.documentElement.scrollTop || 0;
-    if (!mq.matches){ applyState(false); return; }
+    const y = window.scrollY || 0;
     if (!isCompact && y > ENTER_Y) applyState(true);
     else if (isCompact && y < EXIT_Y) applyState(false);
   }
-
   window.addEventListener('scroll', updateHeader, {passive:true});
-  if (mq.addEventListener) mq.addEventListener('change', updateHeader);
-  else if (mq.addListener) mq.addListener(updateHeader);
-
-  document.addEventListener('DOMContentLoaded', updateHeader);
   updateHeader();
 })();
-/* === Header actions (UI only) === */
+
+// ============ Header actions ============
 (function initTopActions(){
   const topBtn = document.getElementById('btn_refresh_top');
   const mainBtn = document.getElementById('btn_refresh_rates');
@@ -1126,19 +1374,190 @@ try{ document.getElementById('btn_print_resumen')?.remove(); }catch(e){}
   }
 })();
 
-/* === Online/Offline chip === */
+// ============ Online/Offline ============
 (function initOnlineChip(){
   const chip = document.getElementById('chip_online');
   if(!chip) return;
   function render(){
     const on = navigator.onLine;
-    chip.textContent = on ? 'Online' : 'Offline';
+    chip.innerHTML = '<span class="dot"></span> ' + (on ? 'Online' : 'Offline');
     chip.classList.toggle('ok', !!on);
     chip.classList.toggle('warn', !on);
   }
   window.addEventListener('online', render);
   window.addEventListener('offline', render);
   render();
+})();
+
+// Initial hero sync
+syncHeroCards();
+
+// ============================================================
+//  PWA VERSIONING SYSTEM (mismo patrón que GestioMada)
+// ============================================================
+(function(){
+  const APP_VERSION = 'v1_0';
+  const btnCheck = document.getElementById('btn_pwa_check_updates');
+  const btnApply = document.getElementById('btn_pwa_apply_update');
+  const statusEl = document.getElementById('pwa_update_status');
+  const vLabel = document.getElementById('version_label');
+
+  function setStatus(t){ if(statusEl) statusEl.textContent = t; }
+  function hasSW(){ return ('serviceWorker' in navigator); }
+
+  // Show version label
+  if(vLabel) vLabel.textContent = APP_VERSION.replace(/_/g, '.');
+
+  // Register SW with updateViaCache:'none'
+  let _regPromise = null;
+  function registerSW(){
+    if(!hasSW()) return;
+    _regPromise = navigator.serviceWorker.register('./sw.js?v=' + APP_VERSION, { updateViaCache: 'none' })
+      .then(function(reg){
+        console.log('[PWA] SW registrado scope:', reg.scope);
+        return reg;
+      })
+      .catch(function(e){ console.warn('[PWA] Error registro SW:', e); return null; });
+  }
+  window.addEventListener('load', registerSW);
+
+  let reloading = false;
+  function listenControllerChange(){
+    if(!hasSW()) return;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(reloading) return;
+      reloading = true;
+      window.location.reload();
+    });
+  }
+
+  async function getReg(){
+    if(!hasSW()) return null;
+    try{
+      if(_regPromise) return await _regPromise;
+      return await navigator.serviceWorker.getRegistration();
+    }catch(e){ return null; }
+  }
+
+  function showApply(show){
+    if(!btnApply) return;
+    btnApply.style.display = show ? '' : 'none';
+  }
+
+  async function getSWVersion(sw){
+    return new Promise(function(resolve){
+      try{
+        if(!sw) return resolve(null);
+        const ch = new MessageChannel();
+        const t = setTimeout(function(){ resolve(null); }, 1500);
+        ch.port1.onmessage = function(ev){
+          clearTimeout(t);
+          const d = ev && ev.data ? ev.data : null;
+          if(d && d.type === 'VERSION') return resolve(d.version || null);
+          resolve(null);
+        };
+        sw.postMessage({ type:'GET_VERSION' }, [ch.port2]);
+      }catch(e){ resolve(null); }
+    });
+  }
+
+  async function checkUpdates(){
+    showApply(false);
+    if(!hasSW()){ setStatus('Navegador no soporta PWA.'); return; }
+    const reg = await getReg();
+    if(!reg){ setStatus('No hay Service Worker registrado.'); return; }
+    listenControllerChange();
+    setStatus('Buscando actualizaciones…');
+
+    // 1. Versión del SW actualmente instalado
+    const vActual = await getSWVersion(reg.active);
+
+    // 2. Descargar sw.js del servidor con cache-busting
+    let vServidor = null;
+    try{
+      const res = await fetch('./sw.js?_cb=' + Date.now(), { cache: 'no-store' });
+      const txt = await res.text();
+      const m = txt.match(/const VERSION\s*=\s*['"]([^'"]+)['"]/);
+      if(m) vServidor = m[1];
+    } catch(e){ console.warn('[PWA] No se pudo leer sw.js del servidor'); }
+
+    console.log('[PWA] vActual:', vActual, '| vServidor:', vServidor, '| APP_VERSION:', APP_VERSION);
+
+    // 3. Si la versión del servidor es igual a la activa → al día
+    if(vServidor && vActual && vServidor === vActual){
+      setStatus('Última versión (' + vActual.replace(/_/g,'.') + ') ✓');
+      showApply(false);
+      return;
+    }
+
+    // 4. Hay diferencia → forzar actualización
+    if(vServidor && vActual && vServidor !== vActual){
+      setStatus('Actualización: ' + vActual.replace(/_/g,'.') + ' → ' + vServidor.replace(/_/g,'.'));
+    }
+
+    try{ await reg.update(); }catch(e){
+      setStatus('Error al descargar: '+(e.message||e));
+      return;
+    }
+
+    // 5. Esperar a que el nuevo SW quede instalado
+    await new Promise(function(resolve){
+      if(reg.waiting){ resolve(); return; }
+      if(reg.installing){
+        reg.installing.addEventListener('statechange', function(e){
+          if(e.target.state === 'installed') resolve();
+        });
+        setTimeout(resolve, 5000);
+        return;
+      }
+      reg.addEventListener('updatefound', function(){
+        const nw = reg.installing; if(!nw){ resolve(); return; }
+        nw.addEventListener('statechange', function(){
+          if(nw.state === 'installed') resolve();
+        });
+      });
+      setTimeout(resolve, 5000);
+    });
+
+    if(reg.waiting){
+      const vW = await getSWVersion(reg.waiting);
+      setStatus('¡Lista' + (vW ? ' ('+vW.replace(/_/g,'.')+')' : '') + '! Toca Aplicar.');
+      showApply(true);
+    } else if(reg.installing){
+      setStatus('Instalando… recarga en unos segundos.');
+    } else {
+      const vNueva = await getSWVersion(reg.active);
+      if(vNueva && vActual && vNueva !== vActual){
+        setStatus('Actualizado a ' + vNueva.replace(/_/g,'.') + '. Recargando…');
+        setTimeout(()=>window.location.reload(), 1000);
+      } else {
+        setStatus('Última versión (' + (vNueva||vServidor||'?').replace(/_/g,'.') + ') ✓');
+        showApply(false);
+      }
+    }
+  }
+
+  async function applyUpdate(){
+    if(!hasSW()) return;
+    const reg = await getReg();
+    if(!reg || !reg.waiting){ setStatus('No hay actualización pendiente.'); showApply(false); return; }
+    setStatus('Aplicando…');
+    try{ reg.waiting.postMessage({ type: 'SKIP_WAITING' }); }catch(e){ setStatus('Error al aplicar.'); }
+  }
+
+  btnCheck && btnCheck.addEventListener('click', checkUpdates);
+  btnApply && btnApply.addEventListener('click', applyUpdate);
+
+  window.DivisasBCVPWA = { checkUpdates, applyUpdate };
+
+  // Si hay SW esperando al cargar, mostrar botón
+  window.addEventListener('load', async function(){
+    const reg = await getReg(); if(!reg) return;
+    if(reg.waiting){
+      setStatus('Actualización disponible. Toca Aplicar.');
+      showApply(true);
+    }
+  });
 })();
 </script>
 </body>

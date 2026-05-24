@@ -1,96 +1,89 @@
-/* Divisas BCV Service Worker */
-const VERSION = '4';
-const CACHE_NAME = `divisas-bcv-shell-v${VERSION}`;
+/* Divisas BCV Service Worker — con sistema de versionado */
+const VERSION = 'v1_0';
+const CACHE_NAME = 'divisas-bcv-' + VERSION;
 
-const APP_SHELL = [
+const URLS_TO_CACHE = [
   './',
-  './index.html',
+  './index.html'
+];
+
+const URLS_OPTIONAL = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
   './icon-180.png'
 ];
 
-// Install: cache shell, activate immediately
-self.addEventListener('install', (event) => {
-  event.waitUntil((async () => {
-    const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(APP_SHELL.map(u => new Request(u, { cache: 'reload' })));
-    await self.skipWaiting();
-  })());
+// Install: cache shell
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(async cache => {
+      await cache.addAll(URLS_TO_CACHE);
+      await Promise.allSettled(URLS_OPTIONAL.map(url =>
+        cache.add(url).catch(e => console.warn('[SW] No se pudo cachear:', url, e.message))
+      ));
+    })
+  );
 });
 
 // Activate: clean old caches + take control
-self.addEventListener('activate', (event) => {
-  event.waitUntil((async () => {
-    const keys = await caches.keys();
-    await Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : Promise.resolve())));
-    await self.clients.claim();
-  })());
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => (k !== CACHE_NAME) ? caches.delete(k) : null));
+      await self.clients.claim();
+    })()
+  );
 });
 
-// Messaging: allow app to request update checks or skipWaiting (optional)
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
-
-// Fetch strategy:
-// - App shell (navigation) -> network-first (so updates arrive), fallback to cache
-// - Static assets in shell -> cache-first
-// - API calls (rates) -> network-only (never cache, always fresh)
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  const url = new URL(req.url);
-
-  // Only handle same-origin
-  const sameOrigin = url.origin === self.location.origin;
-
-  // Never cache API/third-party fetches (rates need to stay fresh)
-  if (!sameOrigin) {
-    return; // Let browser handle normally
-  }
-
-  // Navigation requests: network-first
-  if (req.mode === 'navigate') {
-    event.respondWith((async () => {
-      try {
-        const fresh = await fetch(new Request('./index.html', { cache: 'no-store' }));
-        const cache = await caches.open(CACHE_NAME);
-        cache.put('./index.html', fresh.clone());
-        return fresh;
-      } catch (e) {
-        const cached = await caches.match('./index.html');
-        return cached || Response.error();
-      }
-    })());
-    return;
-  }
-
-  // Cache-first for known shell files
-  if (APP_SHELL.includes(url.pathname.startsWith('/') ? '.'+url.pathname : url.pathname) ||
-      APP_SHELL.includes(url.pathname) ||
-      APP_SHELL.includes(url.pathname.replace(/^\//,'./'))) {
-    event.respondWith((async () => {
-      const cached = await caches.match(req);
-      if (cached) return cached;
-      const fresh = await fetch(req);
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(req, fresh.clone());
-      return fresh;
-    })());
-    return;
-  }
-
-  // Default: network-first (but do not cache)
-  event.respondWith((async () => {
+// Messages: SKIP_WAITING + GET_VERSION
+self.addEventListener('message', event => {
+  const data = event && event.data ? event.data : null;
+  if (!data) return;
+  if (data.type === 'SKIP_WAITING') { self.skipWaiting(); return; }
+  if (data.type === 'GET_VERSION') {
     try {
-      return await fetch(req);
-    } catch (e) {
-      // If offline and something was cached incidentally, serve it
-      const cached = await caches.match(req);
-      return cached || Response.error();
-    }
-  })());
+      if (event.ports && event.ports[0]) {
+        event.ports[0].postMessage({ type: 'VERSION', version: VERSION });
+      }
+    } catch(e) {}
+  }
+});
+
+// Fetch: bypass API domains, cache-first for same-origin
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+
+  // Never cache API / third-party fetches (rates need to stay fresh)
+  if (
+    url.hostname.includes('dolarapi.com') ||
+    url.hostname.includes('ve.dolarapi.com') ||
+    url.hostname.includes('criptoya.com') ||
+    url.hostname.includes('dolarvzla.com') ||
+    url.hostname.includes('corsproxy.io') ||
+    url.hostname.includes('open.er-api.com') ||
+    url.hostname.includes('cdn.jsdelivr.net')
+  ) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Same-origin: cache-first
+  event.respondWith(
+    caches.match(request).then(cached => {
+      if (cached) return cached;
+      return fetch(request).then(resp => {
+        try {
+          if (url.origin === self.location.origin) {
+            const copy = resp.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
+          }
+        } catch(e) {}
+        return resp;
+      });
+    })
+  );
 });
