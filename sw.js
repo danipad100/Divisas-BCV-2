@@ -1,5 +1,5 @@
 /* Divisas BCV Service Worker — con sistema de versionado */
-const VERSION = 'v1_0';
+const VERSION = 'v1_1';
 const CACHE_NAME = 'divisas-bcv-' + VERSION;
 
 const URLS_TO_CACHE = [
