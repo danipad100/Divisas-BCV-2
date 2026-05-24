@@ -65,7 +65,9 @@ self.addEventListener('fetch', event => {
     url.hostname.includes('dolarvzla.com') ||
     url.hostname.includes('corsproxy.io') ||
     url.hostname.includes('open.er-api.com') ||
-    url.hostname.includes('cdn.jsdelivr.net')
+    url.hostname.includes('cdn.jsdelivr.net') ||
+    url.hostname.includes('allorigins.win') ||
+    url.hostname.includes('bcv.org.ve')
   ) {
     event.respondWith(fetch(request));
     return;

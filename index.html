@@ -709,7 +709,7 @@ nav { display: none; }
   <div class="meta-row">
     <span class="chip" id="chip_online"><span class="dot"></span> —</span>
     <span class="chip" id="chip_source">Paralelo: Binance P2P</span>
-    <span class="chip" id="chip_eur_source">€: DolarAPI</span>
+    <span class="chip" id="chip_eur_source">€: BCV directo</span>
   </div>
   <div class="muted" id="rates_last_update" style="margin-bottom:14px;font-size:12px">Actualizado: —</div>
 
@@ -1177,16 +1177,75 @@ async function fetchRates(){
     let usdBcv = NaN;
     let eurBcv = NaN;
 
-    // 1.a) Primario (DolarVZLA)
+    // =============================================================
+    // FUENTE #0 — SCRAPING DIRECTO DEL BCV (más exacta, sin intermediarios)
+    // El HTML del BCV tiene div#dolar y div#euro con el valor en <strong>
+    // Se usa allorigins como proxy CORS para leer el HTML.
+    // =============================================================
     try {
-      const r = await fetch('https://corsproxy.io/?https://api.dolarvzla.com/public/exchange-rate');
-      const j = await r.json();
-      const u = parseFloat(j?.current?.usd);
-      const e = parseFloat(j?.current?.eur);
-      if (isFinite(u) && u > 0) usdBcv = u;
-      if (isFinite(e) && e > 0) eurBcv = e;
+      const bcvHtml = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://www.bcv.org.ve/'));
+      const html = await bcvHtml.text();
+      // Parsear con DOMParser
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      // USD: div#dolar → buscar <strong> con el valor
+      const divDolar = doc.getElementById('dolar');
+      if (divDolar) {
+        const strong = divDolar.querySelector('strong');
+        if (strong) {
+          const val = parseFloat(strong.textContent.trim().replace(/\./g, '').replace(',', '.'));
+          if (isFinite(val) && val > 0) usdBcv = val;
+        }
+      }
+      // EUR: div#euro → buscar <strong> con el valor
+      const divEuro = doc.getElementById('euro');
+      if (divEuro) {
+        const strong = divEuro.querySelector('strong');
+        if (strong) {
+          const val = parseFloat(strong.textContent.trim().replace(/\./g, '').replace(',', '.'));
+          if (isFinite(val) && val > 0) eurBcv = val;
+        }
+      }
+      if (isFinite(usdBcv)) console.log('[BCV Directo] USD:', usdBcv);
+      if (isFinite(eurBcv)) console.log('[BCV Directo] EUR:', eurBcv);
     } catch (e) {
-      console.error('BCV: error DolarVZLA', e);
+      console.warn('BCV directo: error scraping', e);
+    }
+
+    // Fallback #0b: si allorigins falla, intentar con corsproxy
+    if (!isFinite(usdBcv) || !isFinite(eurBcv)) {
+      try {
+        const bcvHtml2 = await fetch('https://corsproxy.io/?https://www.bcv.org.ve/');
+        const html2 = await bcvHtml2.text();
+        const doc2 = new DOMParser().parseFromString(html2, 'text/html');
+        if (!isFinite(usdBcv)) {
+          const s = doc2.getElementById('dolar')?.querySelector('strong');
+          if (s) { const v = parseFloat(s.textContent.trim().replace(/\./g,'').replace(',','.')); if (isFinite(v)&&v>0) usdBcv=v; }
+        }
+        if (!isFinite(eurBcv)) {
+          const s = doc2.getElementById('euro')?.querySelector('strong');
+          if (s) { const v = parseFloat(s.textContent.trim().replace(/\./g,'').replace(',','.')); if (isFinite(v)&&v>0) eurBcv=v; }
+        }
+      } catch (e) {
+        console.warn('BCV directo (corsproxy): error', e);
+      }
+    }
+
+    // =============================================================
+    // FUENTE #1 — APIs terceras (si BCV directo no pudo)
+    // =============================================================
+
+    // 1.a) DolarVZLA API
+    if (!isFinite(usdBcv) || !isFinite(eurBcv)) {
+      try {
+        const r = await fetch('https://corsproxy.io/?https://api.dolarvzla.com/public/exchange-rate');
+        const j = await r.json();
+        const u = parseFloat(j?.current?.usd);
+        const e = parseFloat(j?.current?.eur);
+        if (!isFinite(usdBcv) && isFinite(u) && u > 0) usdBcv = u;
+        if (!isFinite(eurBcv) && isFinite(e) && e > 0) eurBcv = e;
+      } catch (e) {
+        console.error('BCV: error DolarVZLA', e);
+      }
     }
 
     // 1.b) Fallback USD (DolarAPI)
