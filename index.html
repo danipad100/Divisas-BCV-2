@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-app-version="DivisasBCV_v1_1">
+<html lang="es" data-app-version="DivisasBCV_v1_2">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" name="viewport"/>
@@ -884,7 +884,7 @@ nav { display: none; }
   <div class="card" style="opacity:.65">
     <div style="display:flex;align-items:center;gap:8px">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text-tertiary)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      <span style="font-size:12px;color:var(--text-secondary)">Divisas BCV · <span id="version_label">v1.1</span> · Tasas · Conversión · Paralelo ↔ BCV</span>
+      <span style="font-size:12px;color:var(--text-secondary)">Divisas BCV · <span id="version_label">v1.2</span> · Tasas · Conversión · Paralelo ↔ BCV</span>
     </div>
   </div>
 
@@ -1150,6 +1150,68 @@ function rates_pulse_inputs(){
 }
 
 // ============ Fetch rates ============
+
+// Helper: intentar fetch con múltiples proxies CORS (con timeout)
+const CORS_PROXIES = [
+  (url) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+  (url) => 'https://corsproxy.io/?' + url,
+  (url) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
+];
+
+async function fetchWithProxy(url, timeoutMs = 8000) {
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), timeoutMs);
+      const resp = await fetch(proxy(url), { signal: ctrl.signal });
+      clearTimeout(tid);
+      if (resp.ok) return resp;
+    } catch (e) {
+      // Intentar siguiente proxy
+    }
+  }
+  // Último intento: directo (funciona si el server tiene CORS habilitado)
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), timeoutMs);
+    const resp = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (resp.ok) return resp;
+  } catch (e) {}
+  return null;
+}
+
+async function fetchJSON(url, timeoutMs) {
+  const resp = await fetchWithProxy(url, timeoutMs);
+  if (!resp) return null;
+  try { return await resp.json(); } catch (e) { return null; }
+}
+
+async function fetchHTML(url, timeoutMs) {
+  const resp = await fetchWithProxy(url, timeoutMs);
+  if (!resp) return null;
+  try { return await resp.text(); } catch (e) { return null; }
+}
+
+// Parsear HTML del BCV para extraer tasas
+function parseBCVHtml(html) {
+  const result = { usd: NaN, eur: NaN };
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const extract = (id) => {
+      const div = doc.getElementById(id);
+      if (!div) return NaN;
+      const strong = div.querySelector('strong');
+      if (!strong) return NaN;
+      const val = parseFloat(strong.textContent.trim().replace(/\./g, '').replace(',', '.'));
+      return (isFinite(val) && val > 0) ? val : NaN;
+    };
+    result.usd = extract('dolar');
+    result.eur = extract('euro');
+  } catch (e) {}
+  return result;
+}
+
 async function fetchRates(){
   const __force = !!window.__rates_force_next;
   window.__rates_force_next = 0;
@@ -1176,151 +1238,87 @@ async function fetchRates(){
 
     let usdBcv = NaN;
     let eurBcv = NaN;
+    let parRate = NaN;
 
     // =============================================================
-    // FUENTE #0 — SCRAPING DIRECTO DEL BCV (más exacta, sin intermediarios)
-    // El HTML del BCV tiene div#dolar y div#euro con el valor en <strong>
-    // Se usa allorigins como proxy CORS para leer el HTML.
-    // =============================================================
-    try {
-      const bcvHtml = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://www.bcv.org.ve/'));
-      const html = await bcvHtml.text();
-      // Parsear con DOMParser
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      // USD: div#dolar → buscar <strong> con el valor
-      const divDolar = doc.getElementById('dolar');
-      if (divDolar) {
-        const strong = divDolar.querySelector('strong');
-        if (strong) {
-          const val = parseFloat(strong.textContent.trim().replace(/\./g, '').replace(',', '.'));
-          if (isFinite(val) && val > 0) usdBcv = val;
-        }
-      }
-      // EUR: div#euro → buscar <strong> con el valor
-      const divEuro = doc.getElementById('euro');
-      if (divEuro) {
-        const strong = divEuro.querySelector('strong');
-        if (strong) {
-          const val = parseFloat(strong.textContent.trim().replace(/\./g, '').replace(',', '.'));
-          if (isFinite(val) && val > 0) eurBcv = val;
-        }
-      }
-      if (isFinite(usdBcv)) console.log('[BCV Directo] USD:', usdBcv);
-      if (isFinite(eurBcv)) console.log('[BCV Directo] EUR:', eurBcv);
-    } catch (e) {
-      console.warn('BCV directo: error scraping', e);
-    }
-
-    // Fallback #0b: si allorigins falla, intentar con corsproxy
-    if (!isFinite(usdBcv) || !isFinite(eurBcv)) {
-      try {
-        const bcvHtml2 = await fetch('https://corsproxy.io/?https://www.bcv.org.ve/');
-        const html2 = await bcvHtml2.text();
-        const doc2 = new DOMParser().parseFromString(html2, 'text/html');
-        if (!isFinite(usdBcv)) {
-          const s = doc2.getElementById('dolar')?.querySelector('strong');
-          if (s) { const v = parseFloat(s.textContent.trim().replace(/\./g,'').replace(',','.')); if (isFinite(v)&&v>0) usdBcv=v; }
-        }
-        if (!isFinite(eurBcv)) {
-          const s = doc2.getElementById('euro')?.querySelector('strong');
-          if (s) { const v = parseFloat(s.textContent.trim().replace(/\./g,'').replace(',','.')); if (isFinite(v)&&v>0) eurBcv=v; }
-        }
-      } catch (e) {
-        console.warn('BCV directo (corsproxy): error', e);
-      }
-    }
-
-    // =============================================================
-    // FUENTE #1 — APIs terceras (si BCV directo no pudo)
+    // ESTRATEGIA: lanzar todas las fuentes en PARALELO
+    // La primera que responda con dato válido gana.
     // =============================================================
 
-    // 1.a) DolarVZLA API
-    if (!isFinite(usdBcv) || !isFinite(eurBcv)) {
-      try {
-        const r = await fetch('https://corsproxy.io/?https://api.dolarvzla.com/public/exchange-rate');
-        const j = await r.json();
-        const u = parseFloat(j?.current?.usd);
-        const e = parseFloat(j?.current?.eur);
-        if (!isFinite(usdBcv) && isFinite(u) && u > 0) usdBcv = u;
-        if (!isFinite(eurBcv) && isFinite(e) && e > 0) eurBcv = e;
-      } catch (e) {
-        console.error('BCV: error DolarVZLA', e);
-      }
-    }
+    // Fuente A: Scraping directo BCV (USD + EUR exactos)
+    const pBCV = fetchHTML('https://www.bcv.org.ve/').then(html => {
+      if (!html) return { usd: NaN, eur: NaN };
+      const r = parseBCVHtml(html);
+      console.log('[BCV Directo]', r);
+      return r;
+    }).catch(() => ({ usd: NaN, eur: NaN }));
 
-    // 1.b) Fallback USD (DolarAPI)
-    if (!isFinite(usdBcv)) {
-      try {
-        const bcvResp = await fetch('https://corsproxy.io/?https://ve.dolarapi.com/v1/dolares/oficial');
-        const bcvData = await bcvResp.json();
-        usdBcv = parseFloat(bcvData?.promedio);
-      } catch (e) {
-        console.error('USD BCV: error DolarAPI oficial', e);
-      }
-    }
+    // Fuente B: DolarVZLA API (USD + EUR)
+    const pDolarVZLA = fetchJSON('https://api.dolarvzla.com/public/exchange-rate').then(j => {
+      const u = parseFloat(j?.current?.usd);
+      const e = parseFloat(j?.current?.eur);
+      return { usd: isFinite(u) && u > 0 ? u : NaN, eur: isFinite(e) && e > 0 ? e : NaN };
+    }).catch(() => ({ usd: NaN, eur: NaN }));
 
-    if (isFinite(usdBcv)) qs('tasa_bcv').value = usdBcv.toFixed(2);
+    // Fuente C: DolarAPI USD oficial
+    const pDolarAPIusd = fetchJSON('https://ve.dolarapi.com/v1/dolares/oficial').then(d => {
+      const v = parseFloat(d?.promedio ?? d?.venta);
+      return isFinite(v) && v > 0 ? v : NaN;
+    }).catch(() => NaN);
 
-    // 2) EUR BCV: obtener tasa exacta del euro publicada por el BCV
-    // 2.a) Primario EUR: DolarAPI euro oficial (dato exacto BCV, sin cruce)
-    if (!isFinite(eurBcv)) {
-      try {
-        const eurResp = await fetch('https://corsproxy.io/?https://ve.dolarapi.com/v1/euros/oficial');
-        const eurData = await eurResp.json();
-        const eurVal = parseFloat(eurData?.promedio ?? eurData?.venta);
-        if (isFinite(eurVal) && eurVal > 0) eurBcv = eurVal;
-      } catch (e) {
-        console.error('EUR BCV: error DolarAPI euro oficial', e);
-      }
-    }
+    // Fuente D: DolarAPI EUR oficial
+    const pDolarAPIeur = fetchJSON('https://ve.dolarapi.com/v1/euros/oficial').then(d => {
+      const v = parseFloat(d?.promedio ?? d?.venta);
+      return isFinite(v) && v > 0 ? v : NaN;
+    }).catch(() => NaN);
 
-    // 2.b) Fallback EUR: cruce permitido EUR_BCV = USD_BCV × (USD por 1 EUR)
+    // Fuente E: Paralelo — CriptoYa Binance P2P
+    const pCriptoYa = fetchJSON('https://criptoya.com/api/USDT/VES/1').then(d => {
+      const b = d?.binancep2p;
+      const v = parseFloat(b?.totalAsk ?? b?.ask);
+      return isFinite(v) && v > 0 ? v : NaN;
+    }).catch(() => NaN);
+
+    // Fuente F: Paralelo — DolarAPI paralelo
+    const pDolarAPIPar = fetchJSON('https://ve.dolarapi.com/v1/dolares/paralelo').then(d => {
+      const v = parseFloat(d?.promedio ?? d?.compra);
+      return isFinite(v) && v > 0 ? v : NaN;
+    }).catch(() => NaN);
+
+    // Esperar todas en paralelo (con timeout implícito en fetchWithProxy)
+    const [bcv, dvzla, dApiUsd, dApiEur, cripto, dApiPar] = await Promise.all([
+      pBCV, pDolarVZLA, pDolarAPIusd, pDolarAPIeur, pCriptoYa, pDolarAPIPar
+    ]);
+
+    // --- Asignar USD BCV (prioridad: BCV directo > DolarVZLA > DolarAPI) ---
+    if (isFinite(bcv.usd))       usdBcv = bcv.usd;
+    else if (isFinite(dvzla.usd)) usdBcv = dvzla.usd;
+    else if (isFinite(dApiUsd))   usdBcv = dApiUsd;
+
+    // --- Asignar EUR BCV (prioridad: BCV directo > DolarVZLA > DolarAPI EUR) ---
+    if (isFinite(bcv.eur))       eurBcv = bcv.eur;
+    else if (isFinite(dvzla.eur)) eurBcv = dvzla.eur;
+    else if (isFinite(dApiEur))   eurBcv = dApiEur;
+
+    // --- Fallback EUR: cruce EUR_BCV = USD_BCV × EUR/USD ---
     if (!isFinite(eurBcv) && isFinite(usdBcv)) {
       let eurUsd = NaN;
-      try {
-        const fxResp = await fetch('https://corsproxy.io/?https://open.er-api.com/v6/latest/EUR');
-        const fxData = await fxResp.json();
-        eurUsd = parseFloat(fxData?.rates?.USD);
-      } catch (e) {
-        console.error('EUR_USD: error open.er-api', e);
-      }
+      const fxData = await fetchJSON('https://open.er-api.com/v6/latest/EUR');
+      if (fxData) eurUsd = parseFloat(fxData?.rates?.USD);
       if (!isFinite(eurUsd) || eurUsd <= 0) {
-        try {
-          const fx2 = await fetch('https://corsproxy.io/?https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
-          const fx2Data = await fx2.json();
-          eurUsd = parseFloat(fx2Data?.eur?.usd);
-        } catch (e) {
-          console.error('EUR_USD: error fawaz', e);
-        }
+        const fx2 = await fetchJSON('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
+        if (fx2) eurUsd = parseFloat(fx2?.eur?.usd);
       }
-      if (isFinite(eurUsd) && eurUsd > 0) {
-        eurBcv = usdBcv * eurUsd;
-      }
+      if (isFinite(eurUsd) && eurUsd > 0) eurBcv = usdBcv * eurUsd;
     }
 
+    // --- Asignar Paralelo (prioridad: CriptoYa > DolarAPI) ---
+    if (isFinite(cripto))    parRate = cripto;
+    else if (isFinite(dApiPar)) parRate = dApiPar;
+
+    // --- Aplicar valores ---
+    if (isFinite(usdBcv)) qs('tasa_bcv').value = usdBcv.toFixed(2);
     if (isFinite(eurBcv)) qs('tasa_euro_bcv').value = eurBcv.toFixed(2);
-
-    // 3) Paralelo = COMPRA USDT BINANCE P2P
-    let parRate = NaN;
-    try {
-      const p2pResp = await fetch('https://corsproxy.io/?https://criptoya.com/api/USDT/VES/1');
-      const p2pData = await p2pResp.json();
-      const binance = p2pData?.binancep2p;
-      const ask = parseFloat(binance?.totalAsk ?? binance?.ask);
-      if (isFinite(ask) && ask > 0) parRate = ask;
-    } catch (e) {
-      console.error('Paralelo Binance P2P: error CriptoYa', e);
-    }
-    if (!isFinite(parRate)) {
-      try {
-        const parResp = await fetch('https://corsproxy.io/?https://ve.dolarapi.com/v1/dolares/paralelo');
-        const parData = await parResp.json();
-        const compra = parseFloat(parData?.compra);
-        if (isFinite(compra) && compra > 0) parRate = compra;
-      } catch (e) {
-        console.error('Paralelo fallback: error DolarAPI', e);
-      }
-    }
     if (isFinite(parRate)) qs('tasa_paralelo').value = parRate.toFixed(2);
 
     if (isFinite(usdBcv) || isFinite(parRate)) {
@@ -1463,7 +1461,7 @@ syncHeroCards();
 //  PWA VERSIONING SYSTEM (mismo patrón que GestioMada)
 // ============================================================
 (function(){
-  const APP_VERSION = 'v1_1';
+  const APP_VERSION = 'v1_2';
   const btnCheck = document.getElementById('btn_pwa_check_updates');
   const btnApply = document.getElementById('btn_pwa_apply_update');
   const statusEl = document.getElementById('pwa_update_status');

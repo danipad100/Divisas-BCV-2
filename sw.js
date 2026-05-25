@@ -1,5 +1,5 @@
 /* Divisas BCV Service Worker — con sistema de versionado */
-const VERSION = 'v1_1';
+const VERSION = 'v1_2';
 const CACHE_NAME = 'divisas-bcv-' + VERSION;
 
 const URLS_TO_CACHE = [
@@ -67,7 +67,8 @@ self.addEventListener('fetch', event => {
     url.hostname.includes('open.er-api.com') ||
     url.hostname.includes('cdn.jsdelivr.net') ||
     url.hostname.includes('allorigins.win') ||
-    url.hostname.includes('bcv.org.ve')
+    url.hostname.includes('bcv.org.ve') ||
+    url.hostname.includes('codetabs.com')
   ) {
     event.respondWith(fetch(request));
     return;
