@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-app-version="DivisasBCV_v1_2">
+<html lang="es" data-app-version="DivisasBCV_v1_6">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" name="viewport"/>
@@ -669,7 +669,7 @@ nav { display: none; }
 
 <!-- ═══ HEADER ═══ -->
 <header class="app-header">
-  <h1>💱 Divisas BCV</h1>
+  <h1><svg viewBox="0 0 32 32" width="28" height="28" style="vertical-align:-4px;margin-right:4px"><circle cx="16" cy="16" r="15" fill="var(--accent)" opacity=".12"/><text x="7" y="22" font-family="inherit" font-weight="700" font-size="14" fill="var(--accent)">$</text><text x="17" y="22" font-family="inherit" font-weight="700" font-size="14" fill="var(--green)">€</text></svg>Divisas BCV</h1>
   <div class="header-right">
     <label class="dark-toggle-pill">
       <input id="dark_toggle" type="checkbox"/>
@@ -708,7 +708,7 @@ nav { display: none; }
   <!-- Meta chips -->
   <div class="meta-row">
     <span class="chip" id="chip_online"><span class="dot"></span> —</span>
-    <span class="chip" id="chip_source">Paralelo: Binance P2P</span>
+    <span class="chip" id="chip_source">Paralelo: Promedio P2P</span>
     <span class="chip" id="chip_eur_source">€: BCV directo</span>
   </div>
   <div class="muted" id="rates_last_update" style="margin-bottom:14px;font-size:12px">Actualizado: —</div>
@@ -884,7 +884,7 @@ nav { display: none; }
   <div class="card" style="opacity:.65">
     <div style="display:flex;align-items:center;gap:8px">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text-tertiary)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      <span style="font-size:12px;color:var(--text-secondary)">Divisas BCV · <span id="version_label">v1.2</span> · Tasas · Conversión · Paralelo ↔ BCV</span>
+      <span style="font-size:12px;color:var(--text-secondary)">Divisas BCV · <span id="version_label">v1.4</span> · Tasas · Conversión · Paralelo ↔ BCV</span>
     </div>
   </div>
 
@@ -1212,6 +1212,36 @@ function parseBCVHtml(html) {
   return result;
 }
 
+// ── Helpers para caché BCV por día calendario ──────────────────────────────
+// Devuelve la clave "YYYY-MM-DD" del día actual (hora local del dispositivo)
+function bcv_today_key() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+// Guarda las tasas BCV en localStorage marcadas con la fecha de hoy
+function bcv_cache_save(usd, eur) {
+  try {
+    const data = { key: bcv_today_key(), usd: usd, eur: eur, ts: Date.now() };
+    localStorage.setItem('bcv_daily_cache', JSON.stringify(data));
+  } catch(e) {}
+}
+// Lee la caché BCV; devuelve { usd, eur } sólo si fue guardada HOY, null si no
+function bcv_cache_load() {
+  try {
+    const raw = localStorage.getItem('bcv_daily_cache');
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (data.key !== bcv_today_key()) return null; // es de otro día → ignorar
+    const usd = parseFloat(data.usd);
+    const eur = parseFloat(data.eur);
+    if (!isFinite(usd) || usd <= 0) return null;
+    return { usd: usd, eur: isFinite(eur) && eur > 0 ? eur : NaN };
+  } catch(e) { return null; }
+}
+
 async function fetchRates(){
   const __force = !!window.__rates_force_next;
   window.__rates_force_next = 0;
@@ -1220,6 +1250,7 @@ async function fetchRates(){
   try{
     if(fab) fab.classList.add('spinning');
 
+    // Iniciar el tick horario (para el paralelo) una sola vez
     if (!window.__rates_hourly_bootstrapped) {
       window.__rates_hourly_bootstrapped = true;
       setTimeout(async function __tick(){
@@ -1227,9 +1258,21 @@ async function fetchRates(){
         setTimeout(__tick, 60 * 60 * 1000);
       }, 60 * 60 * 1000);
     }
+
     const now = Date.now();
     const lastOk = parseInt(localStorage.getItem('rates_last_ok_ts') || '0', 10) || 0;
-    if (!__force && lastOk && (now - lastOk) < (60 * 60 * 1000)) {
+
+    // ── ¿Tenemos tasas BCV de HOY en caché? ───────────────────────────────
+    const cachedBCV = bcv_cache_load();
+    const bcvCacheHit = !__force && cachedBCV !== null;
+
+    // ── ¿El paralelo fue actualizado en la última hora? ───────────────────
+    const parCacheHit = !__force && lastOk && (now - lastOk) < (60 * 60 * 1000);
+
+    // Si ambos están en caché, aplicar y salir sin hacer ningún fetch
+    if (bcvCacheHit && parCacheHit) {
+      if (isFinite(cachedBCV.usd)) qs('tasa_bcv').value = cachedBCV.usd.toFixed(2);
+      if (isFinite(cachedBCV.eur)) qs('tasa_euro_bcv').value = cachedBCV.eur.toFixed(2);
       divisas_update();
       syncHeroCards();
       if(fab) fab.classList.remove('spinning');
@@ -1241,90 +1284,121 @@ async function fetchRates(){
     let parRate = NaN;
 
     // =============================================================
-    // ESTRATEGIA: lanzar todas las fuentes en PARALELO
-    // La primera que responda con dato válido gana.
+    // ESTRATEGIA: lanzar sólo las fuentes que necesitamos
     // =============================================================
 
-    // Fuente A: Scraping directo BCV (USD + EUR exactos)
-    const pBCV = fetchHTML('https://www.bcv.org.ve/').then(html => {
-      if (!html) return { usd: NaN, eur: NaN };
-      const r = parseBCVHtml(html);
-      console.log('[BCV Directo]', r);
-      return r;
-    }).catch(() => ({ usd: NaN, eur: NaN }));
+    // ── TASAS BCV (sólo si no están en caché de hoy) ─────────────────────
+    if (!bcvCacheHit) {
+      // Fuente 1 (principal): DolarAPI — filtra correctamente la tasa vigente hoy,
+      // aunque el BCV ya haya publicado en su web el precio del día siguiente (~4 pm)
+      const pDolarAPIusd = fetchJSON('https://ve.dolarapi.com/v1/dolares/oficial').then(d => {
+        const v = parseFloat(d?.promedio ?? d?.venta);
+        return isFinite(v) && v > 0 ? v : NaN;
+      }).catch(() => NaN);
 
-    // Fuente B: DolarVZLA API (USD + EUR)
-    const pDolarVZLA = fetchJSON('https://api.dolarvzla.com/public/exchange-rate').then(j => {
-      const u = parseFloat(j?.current?.usd);
-      const e = parseFloat(j?.current?.eur);
-      return { usd: isFinite(u) && u > 0 ? u : NaN, eur: isFinite(e) && e > 0 ? e : NaN };
-    }).catch(() => ({ usd: NaN, eur: NaN }));
+      const pDolarAPIeur = fetchJSON('https://ve.dolarapi.com/v1/euros/oficial').then(d => {
+        const v = parseFloat(d?.promedio ?? d?.venta);
+        return isFinite(v) && v > 0 ? v : NaN;
+      }).catch(() => NaN);
 
-    // Fuente C: DolarAPI USD oficial
-    const pDolarAPIusd = fetchJSON('https://ve.dolarapi.com/v1/dolares/oficial').then(d => {
-      const v = parseFloat(d?.promedio ?? d?.venta);
-      return isFinite(v) && v > 0 ? v : NaN;
-    }).catch(() => NaN);
+      // Fuente 2 (fallback): DolarVZLA API (USD + EUR)
+      const pDolarVZLA = fetchJSON('https://api.dolarvzla.com/public/exchange-rate').then(j => {
+        const u = parseFloat(j?.current?.usd);
+        const e = parseFloat(j?.current?.eur);
+        return { usd: isFinite(u) && u > 0 ? u : NaN, eur: isFinite(e) && e > 0 ? e : NaN };
+      }).catch(() => ({ usd: NaN, eur: NaN }));
 
-    // Fuente D: DolarAPI EUR oficial
-    const pDolarAPIeur = fetchJSON('https://ve.dolarapi.com/v1/euros/oficial').then(d => {
-      const v = parseFloat(d?.promedio ?? d?.venta);
-      return isFinite(v) && v > 0 ? v : NaN;
-    }).catch(() => NaN);
+      // Fuente 3 (último fallback): scraping directo bcv.org.ve
+      // Solo se usa si las APIs anteriores fallan. El BCV publica en su web
+      // el precio del día siguiente desde ~4 pm, por eso va al final.
+      const pBCV = fetchHTML('https://www.bcv.org.ve/').then(html => {
+        if (!html) return { usd: NaN, eur: NaN };
+        const r = parseBCVHtml(html);
+        console.log('[BCV Directo fallback]', r);
+        return r;
+      }).catch(() => ({ usd: NaN, eur: NaN }));
 
-    // Fuente E: Paralelo — CriptoYa Binance P2P
-    const pCriptoYa = fetchJSON('https://criptoya.com/api/USDT/VES/1').then(d => {
-      const b = d?.binancep2p;
-      const v = parseFloat(b?.totalAsk ?? b?.ask);
-      return isFinite(v) && v > 0 ? v : NaN;
-    }).catch(() => NaN);
+      const [dApiUsd, dApiEur, dvzla, bcv] = await Promise.all([
+        pDolarAPIusd, pDolarAPIeur, pDolarVZLA, pBCV
+      ]);
 
-    // Fuente F: Paralelo — DolarAPI paralelo
-    const pDolarAPIPar = fetchJSON('https://ve.dolarapi.com/v1/dolares/paralelo').then(d => {
-      const v = parseFloat(d?.promedio ?? d?.compra);
-      return isFinite(v) && v > 0 ? v : NaN;
-    }).catch(() => NaN);
+      // Prioridad: DolarAPI > DolarVZLA > scraping BCV directo
+      if (isFinite(dApiUsd))        usdBcv = dApiUsd;
+      else if (isFinite(dvzla.usd)) usdBcv = dvzla.usd;
+      else if (isFinite(bcv.usd))   usdBcv = bcv.usd;
 
-    // Esperar todas en paralelo (con timeout implícito en fetchWithProxy)
-    const [bcv, dvzla, dApiUsd, dApiEur, cripto, dApiPar] = await Promise.all([
-      pBCV, pDolarVZLA, pDolarAPIusd, pDolarAPIeur, pCriptoYa, pDolarAPIPar
-    ]);
+      if (isFinite(dApiEur))        eurBcv = dApiEur;
+      else if (isFinite(dvzla.eur)) eurBcv = dvzla.eur;
+      else if (isFinite(bcv.eur))   eurBcv = bcv.eur;
 
-    // --- Asignar USD BCV (prioridad: BCV directo > DolarVZLA > DolarAPI) ---
-    if (isFinite(bcv.usd))       usdBcv = bcv.usd;
-    else if (isFinite(dvzla.usd)) usdBcv = dvzla.usd;
-    else if (isFinite(dApiUsd))   usdBcv = dApiUsd;
-
-    // --- Asignar EUR BCV (prioridad: BCV directo > DolarVZLA > DolarAPI EUR) ---
-    if (isFinite(bcv.eur))       eurBcv = bcv.eur;
-    else if (isFinite(dvzla.eur)) eurBcv = dvzla.eur;
-    else if (isFinite(dApiEur))   eurBcv = dApiEur;
-
-    // --- Fallback EUR: cruce EUR_BCV = USD_BCV × EUR/USD ---
-    if (!isFinite(eurBcv) && isFinite(usdBcv)) {
-      let eurUsd = NaN;
-      const fxData = await fetchJSON('https://open.er-api.com/v6/latest/EUR');
-      if (fxData) eurUsd = parseFloat(fxData?.rates?.USD);
-      if (!isFinite(eurUsd) || eurUsd <= 0) {
-        const fx2 = await fetchJSON('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
-        if (fx2) eurUsd = parseFloat(fx2?.eur?.usd);
+      // Fallback EUR: cruce EUR_BCV = USD_BCV × EUR/USD
+      if (!isFinite(eurBcv) && isFinite(usdBcv)) {
+        let eurUsd = NaN;
+        const fxData = await fetchJSON('https://open.er-api.com/v6/latest/EUR');
+        if (fxData) eurUsd = parseFloat(fxData?.rates?.USD);
+        if (!isFinite(eurUsd) || eurUsd <= 0) {
+          const fx2 = await fetchJSON('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
+          if (fx2) eurUsd = parseFloat(fx2?.eur?.usd);
+        }
+        if (isFinite(eurUsd) && eurUsd > 0) eurBcv = usdBcv * eurUsd;
       }
-      if (isFinite(eurUsd) && eurUsd > 0) eurBcv = usdBcv * eurUsd;
+
+      // Guardar en caché diaria si conseguimos al menos el USD
+      if (isFinite(usdBcv)) {
+        bcv_cache_save(usdBcv, eurBcv);
+        console.log('[BCV Cache] Guardado para hoy (' + bcv_today_key() + '):', usdBcv, eurBcv);
+      }
+
+    } else {
+      // Usar caché del día
+      usdBcv = cachedBCV.usd;
+      eurBcv = cachedBCV.eur;
+      console.log('[BCV Cache] Usando caché de hoy (' + bcv_today_key() + '):', usdBcv, eurBcv);
     }
 
-    // --- Asignar Paralelo (prioridad: CriptoYa > DolarAPI) ---
-    if (isFinite(cripto))    parRate = cripto;
-    else if (isFinite(dApiPar)) parRate = dApiPar;
+    // ── TASA PARALELO (sólo si pasó más de una hora o se forzó) ──────────
+    if (!parCacheHit) {
+      // Fuente E: Paralelo — CriptoYa Binance P2P
+      const pCriptoYa = fetchJSON('https://criptoya.com/api/binancep2p/USDT/VES/1').then(d => {
+        const ask = parseFloat(d?.totalAsk ?? d?.ask);
+        return isFinite(ask) && ask > 0 ? ask : NaN;
+      }).catch(() => NaN);
 
-    // --- Aplicar valores ---
+      // Fuente F: Paralelo — DolarAPI paralelo
+      const pDolarAPIPar = fetchJSON('https://ve.dolarapi.com/v1/dolares/paralelo').then(d => {
+        const v = parseFloat(d?.promedio ?? d?.compra);
+        return isFinite(v) && v > 0 ? v : NaN;
+      }).catch(() => NaN);
+
+      const [cripto, dApiPar] = await Promise.all([pCriptoYa, pDolarAPIPar]);
+
+      // Promedio de fuentes disponibles
+      const parSources = [cripto, dApiPar].filter(v => isFinite(v) && v > 0);
+      if (parSources.length > 0) {
+        parRate = parSources.reduce((a,b) => a+b, 0) / parSources.length;
+        console.log('[Paralelo] Fuentes:', parSources, '→ Promedio:', parRate.toFixed(2));
+      }
+    } else {
+      // El paralelo sigue vigente (menos de 1h), leer del input actual
+      const elPar = qs('tasa_paralelo');
+      if (elPar) {
+        const v = parseFloat(elPar.value);
+        if (isFinite(v) && v > 0) parRate = v;
+      }
+    }
+
+    // --- Aplicar valores al DOM ---
     if (isFinite(usdBcv)) qs('tasa_bcv').value = usdBcv.toFixed(2);
     if (isFinite(eurBcv)) qs('tasa_euro_bcv').value = eurBcv.toFixed(2);
     if (isFinite(parRate)) qs('tasa_paralelo').value = parRate.toFixed(2);
 
-    if (isFinite(usdBcv) || isFinite(parRate)) {
-      localStorage.setItem('rates_last_ok_ts', String(Date.now()));
-      rates_render_last_update();
-      rates_pulse_inputs();
+    // Actualizar timestamp general y UI sólo si hubo algún fetch real
+    if (!bcvCacheHit || !parCacheHit) {
+      if (isFinite(usdBcv) || isFinite(parRate)) {
+        localStorage.setItem('rates_last_ok_ts', String(Date.now()));
+        rates_render_last_update();
+        rates_pulse_inputs();
+      }
     }
 
     divisas_update();
@@ -1375,7 +1449,7 @@ try{ document.getElementById('btn_print_resumen')?.remove(); }catch(e){}
   var btnReset = document.getElementById('btn_reset_general');
   if(btnReset){
     btnReset.addEventListener('click', function(){
-      try{ localStorage.removeItem('divisas_state'); localStorage.removeItem('rates_last_ok_ts'); }catch(e){}
+      try{ localStorage.removeItem('divisas_state'); localStorage.removeItem('rates_last_ok_ts'); localStorage.removeItem('bcv_daily_cache'); }catch(e){}
       try{
         document.querySelectorAll('input, select, textarea').forEach(function(el){
           if(el.id === 'dark_toggle') return;
@@ -1461,7 +1535,7 @@ syncHeroCards();
 //  PWA VERSIONING SYSTEM (mismo patrón que GestioMada)
 // ============================================================
 (function(){
-  const APP_VERSION = 'v1_2';
+  const APP_VERSION = 'v1_6';
   const btnCheck = document.getElementById('btn_pwa_check_updates');
   const btnApply = document.getElementById('btn_pwa_apply_update');
   const statusEl = document.getElementById('pwa_update_status');
