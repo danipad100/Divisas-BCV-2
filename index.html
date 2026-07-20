@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-app-version="DivisasBCV_v1_6">
+<html lang="es" data-app-version="DivisasBCV_v1_11">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" name="viewport"/>
@@ -652,6 +652,96 @@ nav { display: none; }
 .primary, .secondary, .neutral { /* handled by .card */ }
 .result-inline { display: inline-flex; align-items: center; gap: 6px; }
 
+
+/* ── Historial de tasas (compacto) ── */
+.history-section {
+  margin-bottom: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.history-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.history-table th {
+  display: table-cell;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  padding: 0 2px 3px 2px;
+  text-align: right;
+}
+.history-table th:first-child { text-align: left; }
+.history-table td {
+  padding: 4px 2px;
+  text-align: right;
+  color: var(--text);
+  border-top: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+.history-table tr:first-child td { border-top: none; }
+.history-table td:first-child {
+  text-align: left;
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.history-table tr.today-row td {
+  font-weight: 700;
+  color: var(--accent);
+}
+.history-table tr.today-row td:first-child {
+  color: var(--accent);
+}
+.next-rate-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  background: var(--amber-bg);
+  border: 1px solid rgba(245,158,11,.3);
+  border-radius: 12px;
+  padding: 9px 12px;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #b45309;
+  cursor: pointer;
+  font-family: inherit;
+}
+.next-rate-toggle:active { opacity: .8; }
+.next-rate-toggle strong { font-weight: 800; }
+.next-rate-toggle.viewing-next {
+  background: var(--accent-light);
+  border-color: rgba(79,70,229,.3);
+  color: var(--accent);
+}
+body.dark .next-rate-toggle { color: #fcd34d; border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.12); }
+body.dark .next-rate-toggle.viewing-next { color: #a5b4fc; border-color: rgba(129,140,248,.35); background: rgba(129,140,248,.12); }
+body.dark .history-section { background: var(--surface); }
+body.dark .history-table td { color: var(--text); }
+body.dark .history-table tr.today-row td { color: #818cf8; }
+body.dark .history-table tr.today-row td:first-child { color: #818cf8; }
 </style>
 
 <link rel="manifest" href="manifest.json">
@@ -712,6 +802,26 @@ nav { display: none; }
     <span class="chip" id="chip_eur_source">€: BCV directo</span>
   </div>
   <div class="muted" id="rates_last_update" style="margin-bottom:14px;font-size:12px">Actualizado: —</div>
+
+  <!-- Botón fijo: alternar entre tasa de hoy y tasa siguiente (si está disponible) -->
+  <button id="next_rate_toggle_btn" class="next-rate-toggle" style="display:none" onclick="toggle_next_rate_view()"></button>
+
+  <!-- Historial 7 días -->
+  <div class="history-section" id="history_section" style="display:none">
+    <div class="history-header">
+      <span class="history-title">Últimos 7 días</span>
+    </div>
+    <table class="history-table" id="history_table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>$ BCV</th>
+          <th>€ BCV</th>
+        </tr>
+      </thead>
+      <tbody id="history_tbody"></tbody>
+    </table>
+  </div>
 
   <!-- Hidden real rate inputs (IDs preserved for JS logic) -->
   <div class="rate-inputs-hidden">
@@ -1212,6 +1322,245 @@ function parseBCVHtml(html) {
   return result;
 }
 
+// Extrae la "Fecha Valor" publicada en la web del BCV (ej: "Lunes, 20 Julio 2026")
+// y la convierte a clave "YYYY-MM-DD". Devuelve null si no la encuentra.
+function parseBCVFechaValor(html) {
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const text = (doc.body ? doc.body.textContent : html) || '';
+    const m = text.match(/Fecha\s*Valor\s*:?\s*[A-Za-zÁÉÍÓÚáéíóúñÑ]+,?\s*(\d{1,2})\s*(?:de\s*)?([A-Za-zÁÉÍÓÚáéíóúñÑ]+)\s*(?:de\s*)?(\d{4})/i);
+    if (!m) return null;
+    const months = { enero:1, febrero:2, marzo:3, abril:4, mayo:5, junio:6, julio:7,
+      agosto:8, septiembre:9, octubre:10, noviembre:11, diciembre:12 };
+    const monthNum = months[m[2].toLowerCase()];
+    if (!monthNum) return null;
+    const day = parseInt(m[1], 10);
+    const year = parseInt(m[3], 10);
+    if (!isFinite(day) || !isFinite(year)) return null;
+    return year + '-' + String(monthNum).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+  } catch(e) { return null; }
+}
+
+// ── Historial de tasas BCV (últimos 7 días) ─────────────────────────────────
+const HISTORY_KEY = 'bcv_rate_history';
+const HISTORY_MAX = 7;
+
+// Carga el historial completo del localStorage
+function history_load() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+// Guarda una entrada en el historial (upsert por fecha)
+function history_save_entry(dateKey, usd, eur) {
+  try {
+    let arr = history_load();
+    // Quitar entrada existente de esa fecha si la hay
+    arr = arr.filter(e => e.date !== dateKey);
+    arr.push({ date: dateKey, usd: usd, eur: isFinite(eur) ? eur : null });
+    // Ordenar descendente y recortar a 7
+    arr.sort((a, b) => b.date.localeCompare(a.date));
+    arr = arr.slice(0, HISTORY_MAX);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
+  } catch(e) {}
+}
+
+// Renderiza la tabla del historial
+function history_render() {
+  const arr = history_load();
+  if (!arr || arr.length === 0) {
+    const sec = document.getElementById('history_section');
+    if (sec) sec.style.display = 'none';
+    return;
+  }
+  const sec = document.getElementById('history_section');
+  const tbody = document.getElementById('history_tbody');
+  if (!sec || !tbody) return;
+  sec.style.display = '';
+  const todayKey = bcv_today_key();
+  const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  tbody.innerHTML = arr.map(e => {
+    const isToday = e.date === todayKey;
+    const [y, m, d] = e.date.split('-');
+    const dt = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+    const dayName = days[dt.getDay()];
+    const label = isToday
+      ? `<strong>Hoy</strong> · ${dayName} ${d}/${m}`
+      : `${dayName} ${d}/${m}`;
+    const usdTxt = e.usd ? Number(e.usd).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+    const eurTxt = e.eur ? Number(e.eur).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+    return `<tr class="${isToday ? 'today-row' : ''}">
+      <td>${label}</td>
+      <td>${usdTxt}</td>
+      <td>${eurTxt}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Verifica si el BCV ya publicó en su web una tasa distinta a la que tenemos
+// fijada para hoy. En vez de depender de parsear el texto "Fecha Valor" (frágil,
+// puede no estar en el HTML si se carga por JS), comparamos directamente el valor
+// publicado ahora mismo contra el valor ya cacheado para hoy: si son distintos,
+// es porque el BCV ya adelantó la tasa del próximo día hábil.
+const NEXT_PREVIEW_KEY = 'bcv_next_preview';
+
+async function history_check_next_rate() {
+  try {
+    const now = new Date();
+    // Solo verificar a partir de las 15:30 para no hacer fetches innecesarios
+    if (now.getHours() < 15 || (now.getHours() === 15 && now.getMinutes() < 30)) {
+      console.log('[TasaSiguiente] Aún no es hora de verificar (antes de 15:30)');
+      render_next_rate_toggle();
+      return;
+    }
+
+    const cachedToday = bcv_cache_load();
+    if (!cachedToday || !isFinite(cachedToday.usd)) {
+      console.log('[TasaSiguiente] No hay tasa de hoy en caché todavía, no se puede comparar');
+      render_next_rate_toggle();
+      return;
+    }
+    console.log('[TasaSiguiente] Tasa de hoy en caché:', cachedToday.usd);
+
+    window.__checking_next_rate = true;
+    render_next_rate_toggle();
+
+    console.log('[TasaSiguiente] Consultando bcv.org.ve...');
+    const html = await fetchHTML('https://www.bcv.org.ve/', 7000);
+    window.__checking_next_rate = false;
+
+    if (!html) {
+      console.log('[TasaSiguiente] No se pudo obtener el HTML del BCV (proxies fallaron o timeout)');
+      render_next_rate_toggle();
+      return;
+    }
+
+    const scraped = parseBCVHtml(html);
+    console.log('[TasaSiguiente] Valor scrapeado del BCV ahora mismo:', scraped);
+    if (!isFinite(scraped.usd)) {
+      console.log('[TasaSiguiente] No se pudo extraer el USD del HTML scrapeado');
+      render_next_rate_toggle();
+      return;
+    }
+
+    const diff = Math.abs(scraped.usd - cachedToday.usd);
+    console.log('[TasaSiguiente] Diferencia vs hoy:', diff.toFixed(4));
+
+    if (diff > 0.001) {
+      // El BCV ya muestra un valor distinto al fijado hoy → es la tasa siguiente
+      const fechaValor = parseBCVFechaValor(html); // puede ser null si no se encuentra el texto
+      const preview = { date: fechaValor, usd: scraped.usd, eur: scraped.eur, ts: Date.now() };
+      localStorage.setItem(NEXT_PREVIEW_KEY, JSON.stringify(preview));
+      console.log('[TasaSiguiente] ¡Tasa siguiente detectada y guardada!', preview);
+      // Nota: NO se toca bcv_daily_cache aquí — esa caché es la tasa fija de HOY.
+      // Al pasar la medianoche, bcv_today_key() cambia y fetchRates() hará un
+      // fetch normal (vía DolarAPI) que ya reflejará el nuevo día correctamente.
+    } else {
+      // Coincide con hoy → no hay tasa nueva todavía
+      console.log('[TasaSiguiente] Coincide con hoy, todavía no hay tasa nueva');
+      localStorage.removeItem(NEXT_PREVIEW_KEY);
+    }
+
+    render_next_rate_toggle();
+  } catch(e) {
+    window.__checking_next_rate = false;
+    console.log('[TasaSiguiente] Error:', e);
+    render_next_rate_toggle();
+  }
+}
+
+// Pinta (o esconde) el botón fijo de alternar entre la tasa de hoy y la siguiente
+function render_next_rate_toggle() {
+  const btn = document.getElementById('next_rate_toggle_btn');
+  if (!btn) return;
+
+  let preview = null;
+  try {
+    const raw = localStorage.getItem(NEXT_PREVIEW_KEY);
+    if (raw) preview = JSON.parse(raw);
+  } catch(e) {}
+
+  // Si la fecha de la preview ya llegó (o pasó) según el reloj actual, está vencida:
+  // el flujo normal de fetchRates ya la habrá aplicado como "hoy".
+  if (preview && preview.date && preview.date <= bcv_today_key()) {
+    localStorage.removeItem(NEXT_PREVIEW_KEY);
+    preview = null;
+    window.__viewing_next_rate = false;
+  }
+
+  // Mientras se está verificando en segundo plano y aún no hay preview guardada,
+  // mostrar un estado transitorio para que no parezca que no pasó nada.
+  if (!preview && window.__checking_next_rate) {
+    btn.style.display = '';
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Verificando tasa siguiente…';
+    btn.classList.remove('viewing-next');
+    return;
+  }
+  btn.disabled = false;
+
+  if (!preview || !isFinite(preview.usd)) {
+    btn.style.display = 'none';
+    window.__viewing_next_rate = false;
+    return;
+  }
+
+  btn.style.display = '';
+  const viewingNext = !!window.__viewing_next_rate;
+  const usdFmt = Number(preview.usd).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  let label = '';
+  if (preview.date) {
+    const [y, m, d] = preview.date.split('-');
+    const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const dt = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+    label = days[dt.getDay()] + ' ' + d + '/' + m;
+  } else {
+    label = 'siguiente';
+  }
+
+  if (viewingNext) {
+    btn.innerHTML = `↩ Volver a tasa de hoy`;
+    btn.classList.add('viewing-next');
+  } else {
+    btn.innerHTML = `🔔 Ver tasa ${label}: <strong>${usdFmt}</strong>`;
+    btn.classList.remove('viewing-next');
+  }
+}
+
+// Alterna la vista entre la tasa fijada hoy y la tasa siguiente ya publicada.
+// No sobreescribe la caché de hoy — solo cambia lo que se muestra/calcula.
+function toggle_next_rate_view() {
+  let preview = null;
+  try {
+    const raw = localStorage.getItem(NEXT_PREVIEW_KEY);
+    if (raw) preview = JSON.parse(raw);
+  } catch(e) {}
+  if (!preview || !isFinite(preview.usd)) { showToast('La tasa siguiente no está disponible'); return; }
+
+  const cachedToday = bcv_cache_load();
+
+  if (!window.__viewing_next_rate) {
+    // Cambiar a la tasa siguiente
+    qs('tasa_bcv').value = preview.usd.toFixed(2);
+    if (isFinite(preview.eur)) qs('tasa_euro_bcv').value = preview.eur.toFixed(2);
+    window.__viewing_next_rate = true;
+  } else {
+    // Volver a la tasa de hoy
+    if (cachedToday && isFinite(cachedToday.usd)) {
+      qs('tasa_bcv').value = cachedToday.usd.toFixed(2);
+      if (isFinite(cachedToday.eur)) qs('tasa_euro_bcv').value = cachedToday.eur.toFixed(2);
+    }
+    window.__viewing_next_rate = false;
+  }
+
+  divisas_update();
+  syncHeroCards();
+  render_next_rate_toggle();
+}
+
 // ── Helpers para caché BCV por día calendario ──────────────────────────────
 // Devuelve la clave "YYYY-MM-DD" del día actual (hora local del dispositivo)
 function bcv_today_key() {
@@ -1221,10 +1570,10 @@ function bcv_today_key() {
   const day = String(d.getDate()).padStart(2, '0');
   return y + '-' + m + '-' + day;
 }
-// Guarda las tasas BCV en localStorage marcadas con la fecha de hoy
-function bcv_cache_save(usd, eur) {
+// Guarda las tasas BCV en localStorage marcadas con la fecha dada (por defecto: hoy)
+function bcv_cache_save(usd, eur, dateKey) {
   try {
-    const data = { key: bcv_today_key(), usd: usd, eur: eur, ts: Date.now() };
+    const data = { key: dateKey || bcv_today_key(), usd: usd, eur: eur, ts: Date.now() };
     localStorage.setItem('bcv_daily_cache', JSON.stringify(data));
   } catch(e) {}
 }
@@ -1275,6 +1624,8 @@ async function fetchRates(){
       if (isFinite(cachedBCV.eur)) qs('tasa_euro_bcv').value = cachedBCV.eur.toFixed(2);
       divisas_update();
       syncHeroCards();
+      history_render();
+      history_check_next_rate().catch(()=>{});
       if(fab) fab.classList.remove('spinning');
       return;
     }
@@ -1343,40 +1694,54 @@ async function fetchRates(){
         if (isFinite(eurUsd) && eurUsd > 0) eurBcv = usdBcv * eurUsd;
       }
 
-      // Guardar en caché diaria si conseguimos al menos el USD
+      // Guardar en caché diaria e historial si conseguimos al menos el USD
       if (isFinite(usdBcv)) {
         bcv_cache_save(usdBcv, eurBcv);
+        history_save_entry(bcv_today_key(), usdBcv, eurBcv);
         console.log('[BCV Cache] Guardado para hoy (' + bcv_today_key() + '):', usdBcv, eurBcv);
       }
 
     } else {
-      // Usar caché del día
+      // Usar caché del día (también asegurarse de que esté en el historial)
       usdBcv = cachedBCV.usd;
       eurBcv = cachedBCV.eur;
+      history_save_entry(bcv_today_key(), usdBcv, eurBcv);
       console.log('[BCV Cache] Usando caché de hoy (' + bcv_today_key() + '):', usdBcv, eurBcv);
     }
 
     // ── TASA PARALELO (sólo si pasó más de una hora o se forzó) ──────────
     if (!parCacheHit) {
-      // Fuente E: Paralelo — CriptoYa Binance P2P
-      const pCriptoYa = fetchJSON('https://criptoya.com/api/binancep2p/USDT/VES/1').then(d => {
-        const ask = parseFloat(d?.totalAsk ?? d?.ask);
-        return isFinite(ask) && ask > 0 ? ask : NaN;
-      }).catch(() => NaN);
+      // Fuente 1 (principal): DolarAPI paralelo — campo "compra", refleja
+      // el precio real que se paga al comprar USDT en Binance P2P
+      try {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 5000);
+        const r = await fetch('https://ve.dolarapi.com/v1/dolares/paralelo', { signal: ctrl.signal });
+        clearTimeout(tid);
+        if (r.ok) {
+          const j = await r.json();
+          const c = parseFloat(j?.compra);
+          if (isFinite(c) && c > 0) parRate = c;
+          console.log('[Paralelo] DolarAPI compra:', c);
+        }
+      } catch(e) {}
 
-      // Fuente F: Paralelo — DolarAPI paralelo
-      const pDolarAPIPar = fetchJSON('https://ve.dolarapi.com/v1/dolares/paralelo').then(d => {
-        const v = parseFloat(d?.promedio ?? d?.compra);
-        return isFinite(v) && v > 0 ? v : NaN;
-      }).catch(() => NaN);
+      // Fallback: CriptoYa Binance P2P (totalAsk)
+      if (!isFinite(parRate)) {
+        try {
+          const j = await fetchJSON('https://criptoya.com/api/binancep2p/USDT/VES/1');
+          const ask = parseFloat(j?.totalAsk ?? j?.ask);
+          if (isFinite(ask) && ask > 0) { parRate = ask; console.log('[Paralelo] CriptoYa fallback:', ask); }
+        } catch(e) {}
+      }
 
-      const [cripto, dApiPar] = await Promise.all([pCriptoYa, pDolarAPIPar]);
-
-      // Promedio de fuentes disponibles
-      const parSources = [cripto, dApiPar].filter(v => isFinite(v) && v > 0);
-      if (parSources.length > 0) {
-        parRate = parSources.reduce((a,b) => a+b, 0) / parSources.length;
-        console.log('[Paralelo] Fuentes:', parSources, '→ Promedio:', parRate.toFixed(2));
+      // Fallback 2: DolarAPI paralelo vía fetchJSON (con proxies CORS)
+      if (!isFinite(parRate)) {
+        try {
+          const j = await fetchJSON('https://ve.dolarapi.com/v1/dolares/paralelo');
+          const c = parseFloat(j?.compra);
+          if (isFinite(c) && c > 0) { parRate = c; console.log('[Paralelo] DolarAPI proxy fallback:', c); }
+        } catch(e) {}
       }
     } else {
       // El paralelo sigue vigente (menos de 1h), leer del input actual
@@ -1403,6 +1768,8 @@ async function fetchRates(){
 
     divisas_update();
     syncHeroCards();
+    history_render();
+    history_check_next_rate().catch(()=>{});
   }catch(err){
     console.error(err);
     showToast('Error al actualizar tasas');
@@ -1449,7 +1816,7 @@ try{ document.getElementById('btn_print_resumen')?.remove(); }catch(e){}
   var btnReset = document.getElementById('btn_reset_general');
   if(btnReset){
     btnReset.addEventListener('click', function(){
-      try{ localStorage.removeItem('divisas_state'); localStorage.removeItem('rates_last_ok_ts'); localStorage.removeItem('bcv_daily_cache'); }catch(e){}
+      try{ localStorage.removeItem('divisas_state'); localStorage.removeItem('rates_last_ok_ts'); localStorage.removeItem('bcv_daily_cache'); localStorage.removeItem('bcv_rate_history'); localStorage.removeItem('bcv_next_preview'); }catch(e){}
       try{
         document.querySelectorAll('input, select, textarea').forEach(function(el){
           if(el.id === 'dark_toggle') return;
@@ -1535,7 +1902,7 @@ syncHeroCards();
 //  PWA VERSIONING SYSTEM (mismo patrón que GestioMada)
 // ============================================================
 (function(){
-  const APP_VERSION = 'v1_6';
+  const APP_VERSION = 'v1_11';
   const btnCheck = document.getElementById('btn_pwa_check_updates');
   const btnApply = document.getElementById('btn_pwa_apply_update');
   const statusEl = document.getElementById('pwa_update_status');
