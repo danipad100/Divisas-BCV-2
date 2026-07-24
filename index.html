@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-app-version="DivisasBCV_v1_11">
+<html lang="es" data-app-version="DivisasBCV_v1_15">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" name="viewport"/>
@@ -742,6 +742,166 @@ body.dark .history-section { background: var(--surface); }
 body.dark .history-table td { color: var(--text); }
 body.dark .history-table tr.today-row td { color: #818cf8; }
 body.dark .history-table tr.today-row td:first-child { color: #818cf8; }
+/* ── Calculadora (modal) ── */
+.calc-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,15,20,.55);
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+@media (min-width: 640px) {
+  .calc-overlay { align-items: center; padding: 20px; }
+}
+.calc-modal {
+  background: var(--surface);
+  width: 100%;
+  max-width: 420px;
+  max-height: 92vh;
+  overflow-y: auto;
+  border-radius: 20px 20px 0 0;
+  padding: 18px 18px calc(var(--sab) + 18px) 18px;
+  box-shadow: 0 -8px 40px rgba(0,0,0,.25);
+}
+@media (min-width: 640px) {
+  .calc-modal { border-radius: 20px; padding: 20px; }
+}
+.calc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.calc-header h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+}
+.calc-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: none;
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.calc-display-wrap {
+  position: relative;
+  margin-bottom: 14px;
+}
+#calc_display {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  font-size: 26px;
+  font-weight: 700;
+  padding: 16px 44px 16px 14px;
+  border-radius: 14px;
+  border: 2px solid var(--accent);
+  background: var(--surface-alt);
+  color: var(--text);
+  font-family: inherit;
+}
+#calc_display:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-glow); }
+.calc-copy-btn {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: var(--surface);
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.calc-keypad {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.calc-key {
+  height: 52px;
+  border-radius: 12px;
+  border: none;
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.calc-key:active { opacity: .7; }
+.calc-key.op {
+  background: var(--accent);
+  color: #fff;
+}
+.calc-key.clear {
+  background: var(--red);
+  color: #fff;
+}
+.calc-key.eq {
+  grid-column: span 2;
+  background: var(--green);
+  color: #fff;
+}
+.calc-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 10px;
+  text-align: center;
+}
+.calc-history {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.calc-history-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.calc-history-clear {
+  font-size: 11px;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+.calc-history-list { max-height: 140px; overflow-y: auto; }
+.calc-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 4px;
+  font-size: 13px;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+}
+.calc-history-item:first-child { border-top: none; }
+.calc-history-item .chi-expr { color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calc-history-item .chi-res { font-weight: 700; color: var(--text); flex-shrink: 0; }
+.calc-history-empty { font-size: 12px; color: var(--text-tertiary); padding: 6px 4px; }
 </style>
 
 <link rel="manifest" href="manifest.json">
@@ -767,6 +927,9 @@ body.dark .history-table tr.today-row td:first-child { color: #818cf8; }
       <svg aria-hidden="true" class="dt-ico dt-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" fill="none" r="5" stroke="currentColor" stroke-width="2"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/></svg>
       <span>Modo oscuro</span>
     </label>
+    <button class="icon-top-btn" id="btn_calc_open" type="button" title="Calculadora" aria-label="Calculadora">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8" y2="18"/><line x1="12" y1="18" x2="12" y2="18"/><line x1="16" y1="18" x2="16" y2="18"/></svg>
+    </button>
     <button class="icon-top-btn" id="btn_reset_general" type="button" title="Reset general" aria-label="Reset general">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
     </button>
@@ -887,7 +1050,7 @@ body.dark .history-table tr.today-row td:first-child { color: #818cf8; }
         </span>
       </div>
       <div class="result-pill">
-        <span class="rp-label">En Bs (Paralelo)</span>
+        <span class="rp-label">En $ (Paralelo)</span>
         <span class="rp-value">
           <span id="bs_paralelo">—</span>
           <button class="icon-copy-btn" id="btn_copy_bs_paralelo" type="button" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"/><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg></button>
@@ -948,6 +1111,9 @@ body.dark .history-table tr.today-row td:first-child { color: #818cf8; }
         <span id="valor_bs_tasa_bcv_ext">-</span>
         <button class="icon-copy-btn" id="btn_copy_valor_bs_tasa_bcv_ext" type="button" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"/><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg></button>
       </span>
+    </div>
+    <div class="actions-row" style="margin-top:10px">
+      <button class="btn reset" id="btn_reset_paralelo">Limpiar</button>
     </div>
   </div>
 
@@ -1099,7 +1265,7 @@ function divisas_toText(){
     ['Precio Paralelo (USD)', qs('tasa_paralelo').value],
     ['Equivalente en Paralelo', qs('equiv_paralelo').textContent],
     ['En Bs (BCV)', qs('bs_bcv').textContent],
-    ['En Bs (Paralelo)', qs('bs_paralelo').textContent],
+    ['En $ (Paralelo)', qs('bs_paralelo').textContent],
     ['En divisa desde Bs(BCV)', qs('usd_desde_bs').textContent],
     ['Equiv. en BCV (desde Paralelo)', qs('equiv_en_bcv_ext').textContent],
     ['Equiv. en Paralelo (desde BCV)', qs('equiv_en_paralelo_ext').textContent],
@@ -1117,17 +1283,18 @@ function divisas_update(origen){
   const equiv = (isFinite(par) && isFinite(bcvRate) && bcvRate !== 0) ? (par / bcvRate) : null;
   qs('equiv_paralelo').textContent = equiv ? (equiv.toFixed(4) + '×') : '—';
 
-  if (origen === 'desde_bs' && isFinite(bcvRate) && bcvRate !== 0) {
+  if (isFinite(bs_bcv_input) && isFinite(bcvRate) && bcvRate !== 0) {
     const div_from_bs = bs_bcv_input / bcvRate;
     qs('usd_desde_bs').textContent = moneda === 'EUR' ? fmtUSD(div_from_bs).replace('$','€') : fmtUSD(div_from_bs);
-  } else if (origen === 'desde_bs') {
+  } else {
     qs('usd_desde_bs').textContent = '—';
   }
 
   const bsBCV = (isFinite(bcvRate) && isFinite(monto)) ? monto * bcvRate : null;
-  const bsPar = (isFinite(par) && isFinite(monto)) ? monto * par : null;
+  // "En $ (Paralelo)": convierte el Monto en Bs (BCV) a $ usando la tasa paralela
+  const usdPar = (isFinite(par) && isFinite(bs_bcv_input) && par !== 0) ? (bs_bcv_input / par) : null;
   qs('bs_bcv').textContent = bsBCV ? fmtBs(bsBCV) : '—';
-  qs('bs_paralelo').textContent = bsPar ? fmtBs(bsPar) : '—';
+  qs('bs_paralelo').textContent = usdPar ? fmtUSD(usdPar) : '—';
 
   const diff = (isFinite(par) && isFinite(bcvRate)) ? (par - bcvRate) : null;
   qs('diff_bs').textContent = diff ? fmtBs(diff) : '—';
@@ -1153,13 +1320,21 @@ function divisas_update(origen){
   syncHeroCards();
 }
 function divisas_reset(){
-  DIV_KEYS.forEach(id => { const el = qs(id); if (el) el.value = ''; });
+  // Solo limpia los campos de "Conversión rápida" — NO toca tasa_bcv/tasa_paralelo/
+  // tasa_euro_bcv, que son las 3 tarjetas superiores.
+  ['monto_usd','monto_bs_bcv'].forEach(id => { const el = qs(id); if (el) el.value = ''; });
   if (qs('moneda_bcv')) qs('moneda_bcv').value = 'USD';
-  ['equiv_paralelo','bs_bcv','bs_paralelo','usd_desde_bs','diff_bs','gap_pct','equiv_en_bcv_ext','equiv_en_paralelo_ext','valor_bs_tasa_bcv_ext']
-    .forEach(id => { if (qs(id)) qs(id).textContent = (id.includes('ext') ? '-' : '—'); });
-  localStorage.removeItem('divisas_state');
   updateLabels();
+  divisas_update();
   syncHeroCards();
+}
+function divisas_reset_paralelo(){
+  // Limpia solo la sección "Conversión Paralelo ↔ BCV" — no afecta las tasas
+  // ni los campos de "Conversión rápida".
+  ['usd_paralelo_input','usd_bcv_input'].forEach(id => { const el = qs(id); if (el) el.value = ''; });
+  ['equiv_en_bcv_ext','equiv_en_paralelo_ext','valor_bs_tasa_bcv_ext']
+    .forEach(id => { if (qs(id)) qs(id).textContent = '-'; });
+  divisas_update();
 }
 
 function enforceDecimals(input, decimals = 2){
@@ -1216,6 +1391,7 @@ bindCopyBtn('btn_copy_equiv_en_paralelo_ext', ()=>getTextById('equiv_en_paralelo
 bindCopyBtn('btn_copy_valor_bs_tasa_bcv_ext', ()=>getTextById('valor_bs_tasa_bcv_ext'));
 
 qs('btn_reset_div').addEventListener('click',divisas_reset);
+qs('btn_reset_paralelo')?.addEventListener('click',divisas_reset_paralelo);
 divisas_load();
 updateLabels();
 divisas_update();
@@ -1268,7 +1444,20 @@ const CORS_PROXIES = [
   (url) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
 ];
 
-async function fetchWithProxy(url, timeoutMs = 8000) {
+async function fetchWithProxy(url, timeoutMs = 5000) {
+  // 1) Intentar SIEMPRE directo primero: la mayoría de APIs públicas (DolarAPI,
+  //    DolarVZLA, etc.) sí permiten CORS, y esto responde en <1s en vez de
+  //    esperar 3 proxies lentos innecesariamente. Si el sitio bloquea CORS
+  //    (como bcv.org.ve), el navegador falla casi al instante, sin costo real.
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), timeoutMs);
+    const resp = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (resp.ok) return resp;
+  } catch (e) {}
+
+  // 2) Si falló directo, recurrir a los proxies CORS en orden
   for (const proxy of CORS_PROXIES) {
     try {
       const ctrl = new AbortController();
@@ -1280,14 +1469,6 @@ async function fetchWithProxy(url, timeoutMs = 8000) {
       // Intentar siguiente proxy
     }
   }
-  // Último intento: directo (funciona si el server tiene CORS habilitado)
-  try {
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), timeoutMs);
-    const resp = await fetch(url, { signal: ctrl.signal });
-    clearTimeout(tid);
-    if (resp.ok) return resp;
-  } catch (e) {}
   return null;
 }
 
@@ -1428,7 +1609,7 @@ async function history_check_next_rate() {
     render_next_rate_toggle();
 
     console.log('[TasaSiguiente] Consultando bcv.org.ve...');
-    const html = await fetchHTML('https://www.bcv.org.ve/', 7000);
+    const html = await fetchHTML('https://www.bcv.org.ve/', 5000);
     window.__checking_next_rate = false;
 
     if (!html) {
@@ -1630,16 +1811,20 @@ async function fetchRates(){
       return;
     }
 
-    let usdBcv = NaN;
-    let eurBcv = NaN;
-    let parRate = NaN;
-
     // =============================================================
-    // ESTRATEGIA: lanzar sólo las fuentes que necesitamos
+    // ESTRATEGIA: BCV y Paralelo se consultan EN PARALELO (son independientes)
     // =============================================================
 
-    // ── TASAS BCV (sólo si no están en caché de hoy) ─────────────────────
-    if (!bcvCacheHit) {
+    async function resolveBCV() {
+      if (bcvCacheHit) {
+        // Usar caché del día (también asegurarse de que esté en el historial)
+        history_save_entry(bcv_today_key(), cachedBCV.usd, cachedBCV.eur);
+        console.log('[BCV Cache] Usando caché de hoy (' + bcv_today_key() + '):', cachedBCV.usd, cachedBCV.eur);
+        return { usd: cachedBCV.usd, eur: cachedBCV.eur };
+      }
+
+      let usd = NaN, eur = NaN;
+
       // Fuente 1 (principal): DolarAPI — filtra correctamente la tasa vigente hoy,
       // aunque el BCV ya haya publicado en su web el precio del día siguiente (~4 pm)
       const pDolarAPIusd = fetchJSON('https://ve.dolarapi.com/v1/dolares/oficial').then(d => {
@@ -1659,31 +1844,32 @@ async function fetchRates(){
         return { usd: isFinite(u) && u > 0 ? u : NaN, eur: isFinite(e) && e > 0 ? e : NaN };
       }).catch(() => ({ usd: NaN, eur: NaN }));
 
-      // Fuente 3 (último fallback): scraping directo bcv.org.ve
-      // Solo se usa si las APIs anteriores fallan. El BCV publica en su web
-      // el precio del día siguiente desde ~4 pm, por eso va al final.
-      const pBCV = fetchHTML('https://www.bcv.org.ve/').then(html => {
-        if (!html) return { usd: NaN, eur: NaN };
-        const r = parseBCVHtml(html);
-        console.log('[BCV Directo fallback]', r);
-        return r;
-      }).catch(() => ({ usd: NaN, eur: NaN }));
+      // Esperar solo las fuentes rápidas primero (normalmente responden en <2s)
+      const [dApiUsd, dApiEur, dvzla] = await Promise.all([pDolarAPIusd, pDolarAPIeur, pDolarVZLA]);
 
-      const [dApiUsd, dApiEur, dvzla, bcv] = await Promise.all([
-        pDolarAPIusd, pDolarAPIeur, pDolarVZLA, pBCV
-      ]);
+      // Prioridad: DolarAPI > DolarVZLA
+      if (isFinite(dApiUsd))        usd = dApiUsd;
+      else if (isFinite(dvzla.usd)) usd = dvzla.usd;
 
-      // Prioridad: DolarAPI > DolarVZLA > scraping BCV directo
-      if (isFinite(dApiUsd))        usdBcv = dApiUsd;
-      else if (isFinite(dvzla.usd)) usdBcv = dvzla.usd;
-      else if (isFinite(bcv.usd))   usdBcv = bcv.usd;
+      if (isFinite(dApiEur))        eur = dApiEur;
+      else if (isFinite(dvzla.eur)) eur = dvzla.eur;
 
-      if (isFinite(dApiEur))        eurBcv = dApiEur;
-      else if (isFinite(dvzla.eur)) eurBcv = dvzla.eur;
-      else if (isFinite(bcv.eur))   eurBcv = bcv.eur;
+      // Fuente 3 (último recurso, solo si las rápidas no dieron resultado):
+      // scraping directo bcv.org.ve. Es más lento (necesita proxy CORS), así
+      // que solo se consulta cuando realmente hace falta, no siempre.
+      if (!isFinite(usd) || !isFinite(eur)) {
+        console.log('[BCV] Fuentes rápidas incompletas, consultando bcv.org.ve directo...');
+        const html = await fetchHTML('https://www.bcv.org.ve/');
+        if (html) {
+          const bcv = parseBCVHtml(html);
+          console.log('[BCV Directo fallback]', bcv);
+          if (!isFinite(usd) && isFinite(bcv.usd)) usd = bcv.usd;
+          if (!isFinite(eur) && isFinite(bcv.eur)) eur = bcv.eur;
+        }
+      }
 
       // Fallback EUR: cruce EUR_BCV = USD_BCV × EUR/USD
-      if (!isFinite(eurBcv) && isFinite(usdBcv)) {
+      if (!isFinite(eur) && isFinite(usd)) {
         let eurUsd = NaN;
         const fxData = await fetchJSON('https://open.er-api.com/v6/latest/EUR');
         if (fxData) eurUsd = parseFloat(fxData?.rates?.USD);
@@ -1691,26 +1877,29 @@ async function fetchRates(){
           const fx2 = await fetchJSON('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
           if (fx2) eurUsd = parseFloat(fx2?.eur?.usd);
         }
-        if (isFinite(eurUsd) && eurUsd > 0) eurBcv = usdBcv * eurUsd;
+        if (isFinite(eurUsd) && eurUsd > 0) eur = usd * eurUsd;
       }
 
       // Guardar en caché diaria e historial si conseguimos al menos el USD
-      if (isFinite(usdBcv)) {
-        bcv_cache_save(usdBcv, eurBcv);
-        history_save_entry(bcv_today_key(), usdBcv, eurBcv);
-        console.log('[BCV Cache] Guardado para hoy (' + bcv_today_key() + '):', usdBcv, eurBcv);
+      if (isFinite(usd)) {
+        bcv_cache_save(usd, eur);
+        history_save_entry(bcv_today_key(), usd, eur);
+        console.log('[BCV Cache] Guardado para hoy (' + bcv_today_key() + '):', usd, eur);
       }
 
-    } else {
-      // Usar caché del día (también asegurarse de que esté en el historial)
-      usdBcv = cachedBCV.usd;
-      eurBcv = cachedBCV.eur;
-      history_save_entry(bcv_today_key(), usdBcv, eurBcv);
-      console.log('[BCV Cache] Usando caché de hoy (' + bcv_today_key() + '):', usdBcv, eurBcv);
+      return { usd, eur };
     }
 
-    // ── TASA PARALELO (sólo si pasó más de una hora o se forzó) ──────────
-    if (!parCacheHit) {
+    async function resolveParalelo() {
+      if (parCacheHit) {
+        // El paralelo sigue vigente (menos de 1h), leer del input actual
+        const elPar = qs('tasa_paralelo');
+        const v = elPar ? parseFloat(elPar.value) : NaN;
+        return (isFinite(v) && v > 0) ? v : NaN;
+      }
+
+      let par = NaN;
+
       // Fuente 1 (principal): DolarAPI paralelo — campo "compra", refleja
       // el precio real que se paga al comprar USDT en Binance P2P
       try {
@@ -1721,36 +1910,37 @@ async function fetchRates(){
         if (r.ok) {
           const j = await r.json();
           const c = parseFloat(j?.compra);
-          if (isFinite(c) && c > 0) parRate = c;
+          if (isFinite(c) && c > 0) par = c;
           console.log('[Paralelo] DolarAPI compra:', c);
         }
       } catch(e) {}
 
       // Fallback: CriptoYa Binance P2P (totalAsk)
-      if (!isFinite(parRate)) {
+      if (!isFinite(par)) {
         try {
           const j = await fetchJSON('https://criptoya.com/api/binancep2p/USDT/VES/1');
           const ask = parseFloat(j?.totalAsk ?? j?.ask);
-          if (isFinite(ask) && ask > 0) { parRate = ask; console.log('[Paralelo] CriptoYa fallback:', ask); }
+          if (isFinite(ask) && ask > 0) { par = ask; console.log('[Paralelo] CriptoYa fallback:', ask); }
         } catch(e) {}
       }
 
       // Fallback 2: DolarAPI paralelo vía fetchJSON (con proxies CORS)
-      if (!isFinite(parRate)) {
+      if (!isFinite(par)) {
         try {
           const j = await fetchJSON('https://ve.dolarapi.com/v1/dolares/paralelo');
           const c = parseFloat(j?.compra);
-          if (isFinite(c) && c > 0) { parRate = c; console.log('[Paralelo] DolarAPI proxy fallback:', c); }
+          if (isFinite(c) && c > 0) { par = c; console.log('[Paralelo] DolarAPI proxy fallback:', c); }
         } catch(e) {}
       }
-    } else {
-      // El paralelo sigue vigente (menos de 1h), leer del input actual
-      const elPar = qs('tasa_paralelo');
-      if (elPar) {
-        const v = parseFloat(elPar.value);
-        if (isFinite(v) && v > 0) parRate = v;
-      }
+
+      return par;
     }
+
+    // Ejecutar ambas consultas EN PARALELO (antes eran secuenciales: BCV → Paralelo)
+    const [bcvResult, parResult] = await Promise.all([resolveBCV(), resolveParalelo()]);
+    let usdBcv = bcvResult.usd;
+    let eurBcv = bcvResult.eur;
+    let parRate = parResult;
 
     // --- Aplicar valores al DOM ---
     if (isFinite(usdBcv)) qs('tasa_bcv').value = usdBcv.toFixed(2);
@@ -1902,7 +2092,7 @@ syncHeroCards();
 //  PWA VERSIONING SYSTEM (mismo patrón que GestioMada)
 // ============================================================
 (function(){
-  const APP_VERSION = 'v1_11';
+  const APP_VERSION = 'v1_15';
   const btnCheck = document.getElementById('btn_pwa_check_updates');
   const btnApply = document.getElementById('btn_pwa_apply_update');
   const statusEl = document.getElementById('pwa_update_status');
@@ -2063,6 +2253,309 @@ syncHeroCards();
       setStatus('Actualización disponible. Toca Aplicar.');
       showApply(true);
     }
+  });
+})();
+</script>
+
+<!-- ── Modal Calculadora ── -->
+<div class="calc-overlay" id="calc_overlay" style="display:none">
+  <div class="calc-modal" role="dialog" aria-modal="true" aria-label="Calculadora">
+    <div class="calc-header">
+      <h3>Calculadora</h3>
+      <button class="calc-close-btn" id="calc_close_btn" type="button" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="calc-display-wrap">
+      <input id="calc_display" type="text" inputmode="decimal" autocomplete="off" value="0"/>
+      <button class="calc-copy-btn" id="calc_copy_btn" type="button" title="Copiar">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"/><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+    </div>
+
+    <div class="calc-keypad">
+      <button class="calc-key clear" data-calc="C" type="button">C</button>
+      <button class="calc-key" data-calc="back" type="button">⌫</button>
+      <button class="calc-key" data-calc="(" type="button">(</button>
+      <button class="calc-key" data-calc=")" type="button">)</button>
+
+      <button class="calc-key" data-calc="7" type="button">7</button>
+      <button class="calc-key" data-calc="8" type="button">8</button>
+      <button class="calc-key" data-calc="9" type="button">9</button>
+      <button class="calc-key op" data-calc="÷" type="button">÷</button>
+
+      <button class="calc-key" data-calc="4" type="button">4</button>
+      <button class="calc-key" data-calc="5" type="button">5</button>
+      <button class="calc-key" data-calc="6" type="button">6</button>
+      <button class="calc-key op" data-calc="×" type="button">×</button>
+
+      <button class="calc-key" data-calc="1" type="button">1</button>
+      <button class="calc-key" data-calc="2" type="button">2</button>
+      <button class="calc-key" data-calc="3" type="button">3</button>
+      <button class="calc-key op" data-calc="−" type="button">−</button>
+
+      <button class="calc-key" data-calc="sign" type="button">±</button>
+      <button class="calc-key" data-calc="0" type="button">0</button>
+      <button class="calc-key" data-calc="." type="button">.</button>
+      <button class="calc-key op" data-calc="+" type="button">+</button>
+
+      <button class="calc-key" data-calc="sqrt" type="button">√</button>
+      <button class="calc-key" data-calc="%" type="button">%</button>
+      <button class="calc-key eq" data-calc="=" type="button">=</button>
+    </div>
+
+    <div class="calc-hint">Teclado: números, + − × ÷ ( ), Enter, Backspace.</div>
+
+    <div class="calc-history">
+      <div class="calc-history-title">
+        <span>Historial</span>
+        <button class="calc-history-clear" id="calc_history_clear_btn" type="button">Borrar</button>
+      </div>
+      <div class="calc-history-list" id="calc_history_list">
+        <div class="calc-history-empty">Sin operaciones aún</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════ CALCULADORA ═══════════
+(function(){
+  const overlay = document.getElementById('calc_overlay');
+  const display = document.getElementById('calc_display');
+  const historyList = document.getElementById('calc_history_list');
+  const CALC_HISTORY_KEY = 'calc_history';
+  const CALC_HISTORY_MAX = 15;
+
+  function openCalc(){
+    overlay.style.display = 'flex';
+    display.value = '0';
+    render_calc_history();
+    setTimeout(() => display.focus(), 50);
+  }
+  function closeCalc(){
+    overlay.style.display = 'none';
+  }
+
+  document.getElementById('btn_calc_open')?.addEventListener('click', openCalc);
+  document.getElementById('calc_close_btn')?.addEventListener('click', closeCalc);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeCalc(); });
+
+  // Insertar texto en la posición del cursor del display
+  function insertAtCursor(text){
+    const start = display.selectionStart ?? display.value.length;
+    const end = display.selectionEnd ?? display.value.length;
+    const val = display.value === '0' ? '' : display.value;
+    const adjStart = display.value === '0' ? 0 : start;
+    const adjEnd = display.value === '0' ? 0 : end;
+    display.value = val.slice(0, adjStart) + text + val.slice(adjEnd);
+    const pos = adjStart + text.length;
+    display.setSelectionRange(pos, pos);
+    display.focus();
+  }
+
+  function backspace(){
+    const start = display.selectionStart ?? display.value.length;
+    const end = display.selectionEnd ?? display.value.length;
+    if (start !== end) {
+      display.value = display.value.slice(0, start) + display.value.slice(end);
+      display.setSelectionRange(start, start);
+    } else if (start > 0) {
+      display.value = display.value.slice(0, start - 1) + display.value.slice(start);
+      display.setSelectionRange(start - 1, start - 1);
+    }
+    if (display.value === '') display.value = '0';
+    display.focus();
+  }
+
+  function toggleSign(){
+    const v = display.value;
+    const m = v.match(/(-?\d*\.?\d+)$/);
+    if (!m) return;
+    const num = m[0];
+    const start = v.length - num.length;
+    const toggled = num.startsWith('-') ? num.slice(1) : ('-' + num);
+    display.value = v.slice(0, start) + toggled;
+    display.focus();
+  }
+
+  // Evaluador seguro de expresiones (sin eval/Function) —
+  // soporta + - × ÷ ( ) . √ (raíz) y % (porcentaje, /100)
+  function safeCalcEval(exprRaw){
+    const s = exprRaw.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/√/g,'sqrt');
+    let i = 0;
+    function skipSpaces(){ while (s[i] === ' ') i++; }
+    function isDigit(c){ return c >= '0' && c <= '9'; }
+    function parseNumber(){
+      const start = i;
+      while (i < s.length && (isDigit(s[i]) || s[i] === '.')) i++;
+      if (start === i) throw new Error('num');
+      const val = parseFloat(s.slice(start, i));
+      if (!isFinite(val)) throw new Error('num');
+      return val;
+    }
+    function applyPercent(v){
+      skipSpaces();
+      while (s[i] === '%') { v = v / 100; i++; skipSpaces(); }
+      return v;
+    }
+    function parseFactor(){
+      skipSpaces();
+      if (s[i] === '(') {
+        i++;
+        const v = parseExpr();
+        skipSpaces();
+        if (s[i] !== ')') throw new Error(')');
+        i++;
+        return applyPercent(v);
+      }
+      if (s.slice(i, i+4) === 'sqrt') {
+        i += 4;
+        skipSpaces();
+        let v;
+        if (s[i] === '(') {
+          i++;
+          v = parseExpr();
+          skipSpaces();
+          if (s[i] !== ')') throw new Error(')');
+          i++;
+        } else {
+          v = parseNumber();
+        }
+        if (v < 0) throw new Error('sqrt-neg');
+        return applyPercent(Math.sqrt(v));
+      }
+      if (s[i] === '-') { i++; return applyPercent(-parseFactor()); }
+      if (s[i] === '+') { i++; return applyPercent(parseFactor()); }
+      const v = parseNumber();
+      return applyPercent(v);
+    }
+    function parseTerm(){
+      let v = parseFactor();
+      skipSpaces();
+      while (s[i] === '*' || s[i] === '/') {
+        const op = s[i]; i++;
+        const rhs = parseFactor();
+        if (op === '/' && rhs === 0) throw new Error('div0');
+        v = op === '*' ? v * rhs : v / rhs;
+        skipSpaces();
+      }
+      return v;
+    }
+    function parseExpr(){
+      let v = parseTerm();
+      skipSpaces();
+      while (s[i] === '+' || s[i] === '-') {
+        const op = s[i]; i++;
+        const rhs = parseTerm();
+        v = op === '+' ? v + rhs : v - rhs;
+        skipSpaces();
+      }
+      return v;
+    }
+    skipSpaces();
+    if (s.length === 0) throw new Error('empty');
+    const result = parseExpr();
+    skipSpaces();
+    if (i < s.length) throw new Error('trailing');
+    return result;
+  }
+
+  function formatCalcResult(n){
+    if (!isFinite(n)) return 'Error';
+    // Redondear a 8 decimales para evitar ruido de coma flotante, luego formatear
+    const rounded = Math.round(n * 1e8) / 1e8;
+    return rounded.toLocaleString('es-VE', { maximumFractionDigits: 8 });
+  }
+
+  function calcEquals(){
+    const expr = display.value.trim();
+    if (!expr || expr === '0') return;
+    try {
+      const result = safeCalcEval(expr);
+      const formatted = formatCalcResult(result);
+      save_calc_history(expr, formatted);
+      display.value = formatted.replace(/\./g,'§').replace(/,/g,'.').replace(/§/g,''); // usar punto decimal para seguir operando
+      display.focus();
+      display.setSelectionRange(display.value.length, display.value.length);
+    } catch(e) {
+      display.value = 'Error';
+      setTimeout(() => { display.value = '0'; display.focus(); }, 900);
+    }
+  }
+
+  function save_calc_history(expr, result){
+    let arr = [];
+    try {
+      const raw = localStorage.getItem(CALC_HISTORY_KEY);
+      arr = raw ? JSON.parse(raw) : [];
+    } catch(e) {}
+    arr.unshift({ expr, result, ts: Date.now() });
+    arr = arr.slice(0, CALC_HISTORY_MAX);
+    try { localStorage.setItem(CALC_HISTORY_KEY, JSON.stringify(arr)); } catch(e) {}
+    render_calc_history();
+  }
+
+  function render_calc_history(){
+    let arr = [];
+    try {
+      const raw = localStorage.getItem(CALC_HISTORY_KEY);
+      arr = raw ? JSON.parse(raw) : [];
+    } catch(e) {}
+    if (!arr.length) {
+      historyList.innerHTML = '<div class="calc-history-empty">Sin operaciones aún</div>';
+      return;
+    }
+    historyList.innerHTML = arr.map(h => {
+      const exprEsc = String(h.expr).replace(/</g,'&lt;');
+      const resEsc = String(h.result).replace(/</g,'&lt;');
+      return `<div class="calc-history-item" data-result="${resEsc}">
+        <span class="chi-expr">${exprEsc} =</span>
+        <span class="chi-res">${resEsc}</span>
+      </div>`;
+    }).join('');
+  }
+
+  historyList.addEventListener('click', (e) => {
+    const item = e.target.closest('.calc-history-item');
+    if (!item) return;
+    display.value = item.getAttribute('data-result');
+    display.focus();
+  });
+
+  document.getElementById('calc_history_clear_btn')?.addEventListener('click', () => {
+    localStorage.removeItem(CALC_HISTORY_KEY);
+    render_calc_history();
+  });
+
+  document.getElementById('calc_copy_btn')?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(display.value);
+      if (typeof showToast === 'function') showToast('Copiado ✓');
+    } catch(e) {}
+  });
+
+  // Botones del teclado numérico
+  document.querySelectorAll('.calc-key').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const k = btn.getAttribute('data-calc');
+      if (k === 'C') { display.value = '0'; display.focus(); }
+      else if (k === 'back') { backspace(); }
+      else if (k === '=') { calcEquals(); }
+      else if (k === 'sign') { toggleSign(); }
+      else if (k === 'sqrt') { insertAtCursor('√('); }
+      else { insertAtCursor(k); }
+    });
+  });
+
+  // Soporte de teclado físico mientras el modal está abierto
+  document.addEventListener('keydown', (e) => {
+    if (overlay.style.display === 'none' || !overlay.style.display) return;
+    if (e.key === 'Escape') { closeCalc(); return; }
+    if (e.key === 'Enter') { e.preventDefault(); calcEquals(); return; }
+    if (e.key === 'Backspace') { return; } // dejar comportamiento nativo del input
+    // Los demás caracteres (números, operadores, paréntesis, punto) los maneja el input nativamente
   });
 })();
 </script>
