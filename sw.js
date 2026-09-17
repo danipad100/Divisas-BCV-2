@@ -1,5 +1,5 @@
 /* Divisas BCV Service Worker — con sistema de versionado */
-const VERSION = 'v1_15';
+const VERSION = 'v1_21';
 const CACHE_NAME = 'divisas-bcv-' + VERSION;
 
 const URLS_TO_CACHE = [
@@ -74,13 +74,17 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Same-origin: cache-first
+  // Same-origin (+ Google Fonts, para que la tipografía se vea igual offline): cache-first
+  const cacheable = url.origin === self.location.origin ||
+    url.hostname === 'fonts.googleapis.com' ||
+    url.hostname === 'fonts.gstatic.com';
+
   event.respondWith(
     caches.match(request).then(cached => {
       if (cached) return cached;
       return fetch(request).then(resp => {
         try {
-          if (url.origin === self.location.origin) {
+          if (cacheable) {
             const copy = resp.clone();
             caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
           }

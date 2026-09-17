@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="es" data-app-version="DivisasBCV_v1_15">
+<html lang="es" data-app-version="DivisasBCV_v1_21">
 <head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" name="viewport"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <title>Divisas BCV — PWA</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
 <style>
@@ -100,26 +100,10 @@ header h1 {
 }
 
 /* Dark toggle */
-.dark-toggle-pill {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: var(--accent-light);
-  cursor: pointer;
-  transition: all .2s;
-  border: none;
-  position: relative;
-}
-.dark-toggle-pill:active { transform: scale(.92); }
-.dark-toggle-pill input { position: absolute; opacity: 0; pointer-events: none; }
 .dark-toggle-pill .dt-ico { width: 20px; height: 20px; display: block; color: var(--accent); }
 .dark-toggle-pill .dt-sun { display: none; }
-.dark-toggle-pill input:checked ~ .dt-moon { display: none; }
-.dark-toggle-pill input:checked ~ .dt-sun { display: block; }
-.dark-toggle-pill span { display: none; }
+body.dark .dark-toggle-pill .dt-moon { display: none; }
+body.dark .dark-toggle-pill .dt-sun { display: block; }
 
 /* Icon buttons (header) */
 .icon-top-btn {
@@ -128,6 +112,11 @@ header h1 {
   justify-content: center;
   width: 38px;
   height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  max-width: 38px;
+  max-height: 38px;
+  flex-shrink: 0;
   border-radius: 12px;
   background: var(--accent-light);
   border: none;
@@ -135,6 +124,13 @@ header h1 {
   color: var(--accent);
   transition: all .2s;
   padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font: inherit;
+  line-height: normal;
+  vertical-align: top;
+  appearance: none;
+  -webkit-appearance: none;
 }
 .icon-top-btn:active { transform: scale(.92); }
 .icon-top-btn svg { width: 20px; height: 20px; }
@@ -310,7 +306,7 @@ input[type="number"], input[type="text"], select {
   -webkit-appearance: none;
   appearance: none;
 }
-input[type="number"]:focus, select:focus {
+input[type="number"]:focus, input[type="text"]:focus, select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
@@ -631,7 +627,7 @@ body.dark .chip.ok { color: #34d399; }
 
 /* Prevent zoom on input focus (iOS) */
 @media screen and (-webkit-min-device-pixel-ratio: 0) {
-  input[type="number"], select { font-size: 16px; }
+  input[type="number"], input[type="text"], select { font-size: 16px; }
 }
 
 /* UD highlight */
@@ -811,6 +807,7 @@ body.dark .history-table tr.today-row td:first-child { color: #818cf8; }
   font-family: inherit;
 }
 #calc_display:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-glow); }
+#calc_display::placeholder { color: var(--text-tertiary); opacity: 1; font-weight: 700; }
 .calc-copy-btn {
   position: absolute;
   left: 10px;
@@ -921,12 +918,10 @@ body.dark .history-table tr.today-row td:first-child { color: #818cf8; }
 <header class="app-header">
   <h1><svg viewBox="0 0 32 32" width="28" height="28" style="vertical-align:-4px;margin-right:4px"><circle cx="16" cy="16" r="15" fill="var(--accent)" opacity=".12"/><text x="7" y="22" font-family="inherit" font-weight="700" font-size="14" fill="var(--accent)">$</text><text x="17" y="22" font-family="inherit" font-weight="700" font-size="14" fill="var(--green)">€</text></svg>Divisas BCV</h1>
   <div class="header-right">
-    <label class="dark-toggle-pill">
-      <input id="dark_toggle" type="checkbox"/>
-      <svg aria-hidden="true" class="dt-ico dt-moon" viewBox="0 0 24 24"><path d="M21 14.3A8.7 8.7 0 0 1 9.7 3a7.7 7.7 0 1 0 11.3 11.3Z" fill="currentColor"/></svg>
+    <button class="icon-top-btn dark-toggle-pill" id="dark_toggle" type="button" title="Modo oscuro" aria-label="Modo oscuro" aria-pressed="false">
+      <svg aria-hidden="true" class="dt-ico dt-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" fill="currentColor"/></svg>
       <svg aria-hidden="true" class="dt-ico dt-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" fill="none" r="5" stroke="currentColor" stroke-width="2"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/></svg>
-      <span>Modo oscuro</span>
-    </label>
+    </button>
     <button class="icon-top-btn" id="btn_calc_open" type="button" title="Calculadora" aria-label="Calculadora">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8" y2="18"/><line x1="12" y1="18" x2="12" y2="18"/><line x1="16" y1="18" x2="16" y2="18"/></svg>
     </button>
@@ -988,9 +983,9 @@ body.dark .history-table tr.today-row td:first-child { color: #818cf8; }
 
   <!-- Hidden real rate inputs (IDs preserved for JS logic) -->
   <div class="rate-inputs-hidden">
-    <input class="rate-input auto-rate" id="tasa_bcv" min="0" step="0.01" type="number" value="189.26"/>
-    <input class="rate-input auto-rate" id="tasa_euro_bcv" min="0" step="0.01" type="number" value=""/>
-    <input class="rate-input auto-rate" id="tasa_paralelo" min="0" step="0.01" type="number" value="299.80"/>
+    <input class="rate-input auto-rate" id="tasa_bcv" type="text" inputmode="decimal" value="189.26"/>
+    <input class="rate-input auto-rate" id="tasa_euro_bcv" type="text" inputmode="decimal" value=""/>
+    <input class="rate-input auto-rate" id="tasa_paralelo" type="text" inputmode="decimal" value="299.80"/>
   </div>
 
   <!-- ── Tasas Card ── -->
@@ -1029,14 +1024,14 @@ body.dark .history-table tr.today-row td:first-child { color: #818cf8; }
         <label id="label_monto">Monto en $</label>
         <div class="input-group">
           <span class="input-prefix" id="symbol_monto">$</span>
-          <input id="monto_usd" min="0" step="0.01" type="number" placeholder="0,00"/>
+          <input id="monto_usd" type="text" inputmode="decimal" placeholder="0,00"/>
         </div>
       </div>
       <div>
         <label>Monto en Bs (BCV)</label>
         <div class="input-group">
           <span class="input-prefix">Bs</span>
-          <input id="monto_bs_bcv" min="0" step="0.01" type="number" placeholder="0,00"/>
+          <input id="monto_bs_bcv" type="text" inputmode="decimal" placeholder="0,00"/>
         </div>
       </div>
     </div>
@@ -1079,14 +1074,14 @@ body.dark .history-table tr.today-row td:first-child { color: #818cf8; }
         <label id="label_valor_paralelo_ext">Monto Paralelo</label>
         <div class="input-group">
           <span class="input-prefix" id="symbol_paralelo_ext">$</span>
-          <input id="usd_paralelo_input" min="0" placeholder="0,00" step="0.01" type="number"/>
+          <input id="usd_paralelo_input" placeholder="0,00" type="text" inputmode="decimal"/>
         </div>
       </div>
       <div>
         <label id="label_valor_bcv_ext">Monto BCV</label>
         <div class="input-group">
           <span class="input-prefix" id="symbol_bcv_ext">$</span>
-          <input id="usd_bcv_input" min="0" placeholder="0,00" step="0.01" type="number"/>
+          <input id="usd_bcv_input" placeholder="0,00" type="text" inputmode="decimal"/>
         </div>
       </div>
     </div>
@@ -1182,6 +1177,64 @@ function fmtUSD(n){return isFinite(n)&&n!==0 ? '$'+USD_FMT.format(n) : '—'}
 function fmtBs(n){return isFinite(n)&&n!==0 ? 'Bs '+BS_FMT.format(n) : '—'}
 function parseNum(v){ if(typeof v==='number') return v; if(!v) return 0; v=String(v).replace(/[^0-9.,-]/g,'').replace(/,/g,''); return parseFloat(v)||0; }
 
+// Interpreta números tal como se escriben en Venezuela: el punto es separador
+// de miles y la coma es el separador decimal (ej: "3.855,35" -> 3855.35).
+// Si no hay coma, se respeta el punto como decimal cuando parece serlo
+// (1 o 2 dígitos después, ej: "20.5" o "189.26") para no romper valores
+// que ya se escriben con punto decimal.
+function parseVE(v){
+  if (typeof v === 'number') return v;
+  if (v === null || v === undefined) return NaN;
+  let s = String(v).trim();
+  if (s === '') return NaN;
+  const neg = s.startsWith('-');
+  s = s.replace(/[^0-9.,]/g, '');
+  if (s === '') return NaN;
+  const lastComma = s.lastIndexOf(',');
+  if (lastComma !== -1) {
+    // La coma es el separador decimal; cualquier punto antes es de miles.
+    const intPart = s.slice(0, lastComma).replace(/\./g, '');
+    const decPart = s.slice(lastComma + 1).replace(/[.,]/g, '');
+    s = intPart + '.' + decPart;
+  } else {
+    const dotCount = (s.match(/\./g) || []).length;
+    if (dotCount > 1) {
+      // Varios puntos sin coma: todos son separadores de miles (3.855.000).
+      s = s.replace(/\./g, '');
+    } else if (dotCount === 1) {
+      const afterDot = s.split('.')[1] || '';
+      if (afterDot.length === 3) {
+        // Un solo punto con 3 dígitos detrás: separador de miles (3.855).
+        s = s.replace(/\./g, '');
+      }
+      // Con 1 o 2 dígitos detrás se deja como decimal (20.5, 189.26).
+    }
+  }
+  const n = parseFloat(s);
+  if (!isFinite(n)) return NaN;
+  return neg ? -Math.abs(n) : n;
+}
+
+// Limpia en vivo lo que se escribe en un input de monto/tasa: solo dígitos,
+// puntos y como máximo una coma (evita letras y errores de tipeo).
+function sanitizeVEInput(el){
+  const before = el.value;
+  let v = before.replace(/[^0-9.,]/g, '');
+  const firstComma = v.indexOf(',');
+  if (firstComma !== -1) {
+    v = v.slice(0, firstComma + 1) + v.slice(firstComma + 1).replace(/,/g, '');
+  }
+  if (v !== before) {
+    const diff = before.length - v.length;
+    const pos = el.selectionStart;
+    el.value = v;
+    if (pos != null) {
+      const newPos = Math.max(0, pos - diff);
+      try { el.setSelectionRange(newPos, newPos); } catch(e){}
+    }
+  }
+}
+
 function copyText(t){
   if(navigator.clipboard && window.isSecureContext){
     navigator.clipboard.writeText(t).then(()=>showToast('Copiado ✓')).catch(()=>fallbackCopy(t));
@@ -1209,9 +1262,9 @@ function qs(id){return document.getElementById(id)}
 
 // ============ Hero card sync ============
 function syncHeroCards(){
-  const usd = parseFloat(qs('tasa_bcv').value);
-  const eur = parseFloat(qs('tasa_euro_bcv').value);
-  const par = parseFloat(qs('tasa_paralelo').value);
+  const usd = parseVE(qs('tasa_bcv').value);
+  const eur = parseVE(qs('tasa_euro_bcv').value);
+  const par = parseVE(qs('tasa_paralelo').value);
   const fmt = (n) => isFinite(n) && n>0 ? BS_FMT.format(n) : '—';
   qs('hero_usd_val').textContent = fmt(usd);
   qs('hero_eur_val').textContent = fmt(eur);
@@ -1221,8 +1274,8 @@ function syncHeroCards(){
 // Dark mode
 (function initDark(){
   const t=qs('dark_toggle'); const on=localStorage.getItem('dark_on')==='1';
-  document.body.classList.toggle('dark',on); if(t) t.checked=on;
-  t&&t.addEventListener('change',()=>{const on=t.checked;document.body.classList.toggle('dark',on);localStorage.setItem('dark_on',on?'1':'0');});
+  document.body.classList.toggle('dark',on); if(t) t.setAttribute('aria-pressed', on ? 'true' : 'false');
+  t&&t.addEventListener('click',()=>{const on=!document.body.classList.contains('dark');document.body.classList.toggle('dark',on);t.setAttribute('aria-pressed', on ? 'true' : 'false');localStorage.setItem('dark_on',on?'1':'0');});
 })();
 
 // ============ Nav (compat) ============
@@ -1275,10 +1328,10 @@ function divisas_toText(){
 }
 function divisas_update(origen){
   const moneda = qs('moneda_bcv')?.value || 'USD';
-  const bcvRate = parseFloat(moneda === 'EUR' ? qs('tasa_euro_bcv').value : qs('tasa_bcv').value);
-  const par = parseFloat(qs('tasa_paralelo').value);
-  const monto = parseFloat(qs('monto_usd').value);
-  const bs_bcv_input = parseFloat(qs('monto_bs_bcv').value);
+  const bcvRate = parseVE(moneda === 'EUR' ? qs('tasa_euro_bcv').value : qs('tasa_bcv').value);
+  const par = parseVE(qs('tasa_paralelo').value);
+  const monto = parseVE(qs('monto_usd').value);
+  const bs_bcv_input = parseVE(qs('monto_bs_bcv').value);
 
   const equiv = (isFinite(par) && isFinite(bcvRate) && bcvRate !== 0) ? (par / bcvRate) : null;
   qs('equiv_paralelo').textContent = equiv ? (equiv.toFixed(4) + '×') : '—';
@@ -1300,8 +1353,8 @@ function divisas_update(origen){
   qs('diff_bs').textContent = diff ? fmtBs(diff) : '—';
   qs('gap_pct').textContent = (isFinite(par) && isFinite(bcvRate) && bcvRate !== 0) ? (((par - bcvRate) / bcvRate) * 100).toFixed(2) + '%' : '—';
 
-  const usdParIn = parseFloat(qs('usd_paralelo_input').value);
-  const usdBcvIn = parseFloat(qs('usd_bcv_input').value);
+  const usdParIn = parseVE(qs('usd_paralelo_input').value);
+  const usdBcvIn = parseVE(qs('usd_bcv_input').value);
   if (isFinite(usdParIn) && isFinite(par) && isFinite(bcvRate) && bcvRate !== 0) {
     const equivBCV = usdParIn * (par / bcvRate);
     qs('equiv_en_bcv_ext').textContent = fmtUSD(equivBCV).replace('$', moneda === 'EUR' ? '€' : '$');
@@ -1340,8 +1393,7 @@ function divisas_reset_paralelo(){
 function enforceDecimals(input, decimals = 2){
   let valStr = input.value;
   if(valStr === '') return;
-  valStr = valStr.replace(/,/g, '.');
-  const val = parseFloat(valStr);
+  const val = parseVE(valStr);
   if(isFinite(val)) input.value = val.toFixed(decimals);
 }
 
@@ -1358,6 +1410,11 @@ function updateLabels(){
   }
   if(qs('diff_currency_symbol')) qs('diff_currency_symbol').textContent = moneda === 'EUR' ? '€' : '$';
 }
+
+['tasa_bcv','tasa_euro_bcv','tasa_paralelo','monto_usd','monto_bs_bcv','usd_paralelo_input','usd_bcv_input'].forEach(id=>{
+  const el = qs(id);
+  if (el) el.addEventListener('input', () => sanitizeVEInput(el));
+});
 
 qs('tasa_bcv').addEventListener('input',()=>{ divisas_update(); syncHeroCards(); });
 qs('tasa_paralelo').addEventListener('input',()=>{ divisas_update(); syncHeroCards(); });
@@ -1440,7 +1497,7 @@ function rates_pulse_inputs(){
 // Helper: intentar fetch con múltiples proxies CORS (con timeout)
 const CORS_PROXIES = [
   (url) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
-  (url) => 'https://corsproxy.io/?' + url,
+  (url) => 'https://corsproxy.io/?' + encodeURIComponent(url),
   (url) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
 ];
 
@@ -1604,6 +1661,19 @@ async function history_check_next_rate() {
       return;
     }
     console.log('[TasaSiguiente] Tasa de hoy en caché:', cachedToday.usd);
+
+    // Si ya detectamos y guardamos la tasa siguiente hoy mismo, no hace falta
+    // volver a scrapear bcv.org.ve cada hora — evita golpear sin necesidad
+    // los proxies CORS gratuitos, que son el eslabón más frágil de la app.
+    try {
+      const existing = JSON.parse(localStorage.getItem(NEXT_PREVIEW_KEY) || 'null');
+      if (existing && typeof existing.ts === 'number' &&
+          new Date(existing.ts).toDateString() === new Date().toDateString()) {
+        console.log('[TasaSiguiente] Ya detectada hoy, se omite nuevo scraping');
+        render_next_rate_toggle();
+        return;
+      }
+    } catch(e) {}
 
     window.__checking_next_rate = true;
     render_next_rate_toggle();
@@ -1773,6 +1843,11 @@ function bcv_cache_load() {
 }
 
 async function fetchRates(){
+  // Evita ejecuciones simultáneas (doble tap, tick horario + botón manual, etc.)
+  // que podrían pisarse entre sí al escribir en el DOM y en localStorage.
+  if (window.__rates_in_flight) return;
+  window.__rates_in_flight = true;
+
   const __force = !!window.__rates_force_next;
   window.__rates_force_next = 0;
   const fab = qs('fab_refresh');
@@ -1791,13 +1866,17 @@ async function fetchRates(){
 
     const now = Date.now();
     const lastOk = parseInt(localStorage.getItem('rates_last_ok_ts') || '0', 10) || 0;
+    // Timestamp propio del paralelo (independiente del de BCV): antes se usaba
+    // el mismo 'rates_last_ok_ts' para los dos, así que si BCV se actualizaba
+    // pero el paralelo fallaba, el paralelo igual quedaba marcado como "reciente".
+    const parLastOk = parseInt(localStorage.getItem('par_last_ok_ts') || '0', 10) || 0;
 
     // ── ¿Tenemos tasas BCV de HOY en caché? ───────────────────────────────
     const cachedBCV = bcv_cache_load();
     const bcvCacheHit = !__force && cachedBCV !== null;
 
     // ── ¿El paralelo fue actualizado en la última hora? ───────────────────
-    const parCacheHit = !__force && lastOk && (now - lastOk) < (60 * 60 * 1000);
+    const parCacheHit = !__force && parLastOk && (now - parLastOk) < (60 * 60 * 1000);
 
     // Si ambos están en caché, aplicar y salir sin hacer ningún fetch
     if (bcvCacheHit && parCacheHit) {
@@ -1894,7 +1973,7 @@ async function fetchRates(){
       if (parCacheHit) {
         // El paralelo sigue vigente (menos de 1h), leer del input actual
         const elPar = qs('tasa_paralelo');
-        const v = elPar ? parseFloat(elPar.value) : NaN;
+        const v = elPar ? parseVE(elPar.value) : NaN;
         return (isFinite(v) && v > 0) ? v : NaN;
       }
 
@@ -1933,6 +2012,10 @@ async function fetchRates(){
         } catch(e) {}
       }
 
+      if (isFinite(par)) {
+        try { localStorage.setItem('par_last_ok_ts', String(Date.now())); } catch(e) {}
+      }
+
       return par;
     }
 
@@ -1964,6 +2047,7 @@ async function fetchRates(){
     console.error(err);
     showToast('Error al actualizar tasas');
   }finally{
+    window.__rates_in_flight = false;
     if(fab) fab.classList.remove('spinning');
   }
 }
@@ -1992,12 +2076,9 @@ try{ document.getElementById('btn_print_resumen')?.remove(); }catch(e){}
   try{
     document.querySelectorAll('input, select, textarea').forEach(function(el){
       if(el.id === 'dark_toggle') return;
-      if(el.type === 'number') {
-        // Rate inputs keep their value (will be populated by fetchRates)
-        if(RATE_IDS.includes(el.id)) return;
-        el.value = '';
-      }
-      else if(el.tagName === 'SELECT'){
+      // Las tasas mantienen su valor (se completan con fetchRates)
+      if(RATE_IDS.includes(el.id)) return;
+      if(el.tagName === 'SELECT'){
         if(el.id === 'moneda_bcv') { el.value = 'USD'; try{ el.dispatchEvent(new Event('change', {bubbles:true})); }catch(e){} }
       } else el.value = '';
     });
@@ -2010,11 +2091,7 @@ try{ document.getElementById('btn_print_resumen')?.remove(); }catch(e){}
       try{
         document.querySelectorAll('input, select, textarea').forEach(function(el){
           if(el.id === 'dark_toggle') return;
-          if(el.type === 'number') {
-            if(RATE_IDS.includes(el.id)) return;
-            el.value = '';
-          }
-          else if(el.tagName === 'SELECT'){
+          if(el.tagName === 'SELECT'){
             if(el.id === 'moneda_bcv') { el.value = 'USD'; try{ el.dispatchEvent(new Event('change', {bubbles:true})); }catch(e){} }
           } else el.value = '';
         });
@@ -2080,10 +2157,29 @@ try{ document.getElementById('btn_print_resumen')?.remove(); }catch(e){}
     chip.classList.toggle('ok', !!on);
     chip.classList.toggle('warn', !on);
   }
-  window.addEventListener('online', render);
+  window.addEventListener('online', function(){
+    render();
+    // Al recuperar conexión, si las tasas llevan más de 1h sin actualizarse, refrescar
+    try {
+      const lastOk = parseInt(localStorage.getItem('rates_last_ok_ts') || '0', 10) || 0;
+      if (!lastOk || (Date.now() - lastOk) > 60 * 60 * 1000) fetchRates();
+    } catch(e) {}
+  });
   window.addEventListener('offline', render);
   render();
 })();
+
+// ============ Refrescar al volver de segundo plano ============
+// Los navegadores móviles suspenden temporizadores en segundo plano, así que
+// el tick horario de fetchRates() no corre mientras la PWA está minimizada.
+// Al volver a primer plano, si ya pasó más de 1h, se refresca solo.
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState !== 'visible') return;
+  try {
+    const lastOk = parseInt(localStorage.getItem('rates_last_ok_ts') || '0', 10) || 0;
+    if (!lastOk || (Date.now() - lastOk) > 60 * 60 * 1000) fetchRates();
+  } catch(e) {}
+});
 
 // Initial hero sync
 syncHeroCards();
@@ -2092,7 +2188,7 @@ syncHeroCards();
 //  PWA VERSIONING SYSTEM (mismo patrón que GestioMada)
 // ============================================================
 (function(){
-  const APP_VERSION = 'v1_15';
+  const APP_VERSION = 'v1_21';
   const btnCheck = document.getElementById('btn_pwa_check_updates');
   const btnApply = document.getElementById('btn_pwa_apply_update');
   const statusEl = document.getElementById('pwa_update_status');
@@ -2268,7 +2364,7 @@ syncHeroCards();
     </div>
 
     <div class="calc-display-wrap">
-      <input id="calc_display" type="text" inputmode="decimal" autocomplete="off" value="0"/>
+      <input id="calc_display" type="text" inputmode="decimal" autocomplete="off" placeholder="0" value=""/>
       <button class="calc-copy-btn" id="calc_copy_btn" type="button" title="Copiar">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="3"/><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg>
       </button>
@@ -2330,7 +2426,7 @@ syncHeroCards();
 
   function openCalc(){
     overlay.style.display = 'flex';
-    display.value = '0';
+    display.value = '';
     render_calc_history();
     setTimeout(() => display.focus(), 50);
   }
@@ -2342,13 +2438,32 @@ syncHeroCards();
   document.getElementById('calc_close_btn')?.addEventListener('click', closeCalc);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeCalc(); });
 
+  // Limpia en vivo lo que se escribe directamente en el display (teclado físico,
+  // pegar texto, etc.): solo números, operadores, paréntesis, punto, % y √.
+  function sanitizeCalcDisplay(){
+    const before = display.value;
+    const cleaned = before.replace(/[^0-9+\-×÷*/().%√\s]/g, '');
+    if (cleaned !== before) {
+      const pos = display.selectionStart;
+      const diff = before.length - cleaned.length;
+      display.value = cleaned;
+      if (pos != null) {
+        const newPos = Math.max(0, pos - diff);
+        try { display.setSelectionRange(newPos, newPos); } catch(e){}
+      }
+    }
+  }
+  display.addEventListener('input', sanitizeCalcDisplay);
+  display.addEventListener('paste', () => setTimeout(sanitizeCalcDisplay, 0));
+
   // Insertar texto en la posición del cursor del display
   function insertAtCursor(text){
     const start = display.selectionStart ?? display.value.length;
     const end = display.selectionEnd ?? display.value.length;
-    const val = display.value === '0' ? '' : display.value;
-    const adjStart = display.value === '0' ? 0 : start;
-    const adjEnd = display.value === '0' ? 0 : end;
+    const isPlaceholderState = display.value === '' || display.value === '0';
+    const val = isPlaceholderState ? '' : display.value;
+    const adjStart = isPlaceholderState ? 0 : start;
+    const adjEnd = isPlaceholderState ? 0 : end;
     display.value = val.slice(0, adjStart) + text + val.slice(adjEnd);
     const pos = adjStart + text.length;
     display.setSelectionRange(pos, pos);
@@ -2365,7 +2480,6 @@ syncHeroCards();
       display.value = display.value.slice(0, start - 1) + display.value.slice(start);
       display.setSelectionRange(start - 1, start - 1);
     }
-    if (display.value === '') display.value = '0';
     display.focus();
   }
 
@@ -2471,7 +2585,7 @@ syncHeroCards();
 
   function calcEquals(){
     const expr = display.value.trim();
-    if (!expr || expr === '0') return;
+    if (!expr) return;
     try {
       const result = safeCalcEval(expr);
       const formatted = formatCalcResult(result);
@@ -2481,7 +2595,7 @@ syncHeroCards();
       display.setSelectionRange(display.value.length, display.value.length);
     } catch(e) {
       display.value = 'Error';
-      setTimeout(() => { display.value = '0'; display.focus(); }, 900);
+      setTimeout(() => { display.value = ''; display.focus(); }, 900);
     }
   }
 
@@ -2540,7 +2654,7 @@ syncHeroCards();
   document.querySelectorAll('.calc-key').forEach(btn => {
     btn.addEventListener('click', () => {
       const k = btn.getAttribute('data-calc');
-      if (k === 'C') { display.value = '0'; display.focus(); }
+      if (k === 'C') { display.value = ''; display.focus(); }
       else if (k === 'back') { backspace(); }
       else if (k === '=') { calcEquals(); }
       else if (k === 'sign') { toggleSign(); }
