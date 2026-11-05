@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-app-version="DivisasBCV_v1_22">
+<html lang="es" data-app-version="DivisasBCV_v1_23">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
@@ -1541,6 +1541,27 @@ async function fetchHTML(url, timeoutMs) {
   try { return await resp.text(); } catch (e) { return null; }
 }
 
+// Lee bcv.org.ve probando directo y cada proxy CORS hasta obtener un HTML
+// que REALMENTE traiga las tasas (antes bastaba con un HTTP 200, y si el proxy
+// devolvía una página de error se daba por fallido sin probar el siguiente).
+async function fetchBCVRates(timeoutMs = 10000) {
+  const url = 'https://www.bcv.org.ve/';
+  const intentos = [(u) => u, ...CORS_PROXIES];
+  for (const build of intentos) {
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), timeoutMs);
+      const resp = await fetch(build(url), { signal: ctrl.signal });
+      clearTimeout(tid);
+      if (!resp.ok) continue;
+      const html = await resp.text();
+      const r = parseBCVHtml(html);
+      if (isFinite(r.usd)) return { usd: r.usd, eur: r.eur, html: html };
+    } catch (e) {}
+  }
+  return null;
+}
+
 // Parsear HTML del BCV para extraer tasas
 function parseBCVHtml(html) {
   const result = { usd: NaN, eur: NaN };
@@ -1679,7 +1700,8 @@ async function history_check_next_rate() {
     render_next_rate_toggle();
 
     console.log('[TasaSiguiente] Consultando bcv.org.ve...');
-    const html = await fetchHTML('https://www.bcv.org.ve/', 5000);
+    const bcvNow = await fetchBCVRates();
+    const html = bcvNow ? bcvNow.html : null;
     window.__checking_next_rate = false;
 
     if (!html) {
@@ -1711,6 +1733,18 @@ async function history_check_next_rate() {
     } else {
       // Coincide con hoy → no hay tasa nueva todavía
       console.log('[TasaSiguiente] Coincide con hoy, todavía no hay tasa nueva');
+      // Aprovechar para dejar el euro oficial del BCV si el guardado difiere
+      if (eurEsValido(scraped.eur, scraped.usd) &&
+          (!isFinite(cachedToday.eur) || Math.abs(cachedToday.eur - scraped.eur) > 0.005)) {
+        bcv_cache_save(cachedToday.usd, scraped.eur, null, 'bcv');
+        history_save_entry(bcv_today_key(), cachedToday.usd, scraped.eur);
+        if (!window.__viewing_next_rate) {
+          qs('tasa_euro_bcv').value = scraped.eur.toFixed(2);
+          divisas_update(); syncHeroCards(); history_render();
+        }
+        const chipEur = qs('chip_eur_source'); if (chipEur) chipEur.textContent = '€: BCV directo';
+        console.log('[TasaSiguiente] Euro corregido con el valor del BCV:', scraped.eur);
+      }
       localStorage.removeItem(NEXT_PREVIEW_KEY);
     }
 
@@ -1822,9 +1856,9 @@ function bcv_today_key() {
   return y + '-' + m + '-' + day;
 }
 // Guarda las tasas BCV en localStorage marcadas con la fecha dada (por defecto: hoy)
-function bcv_cache_save(usd, eur, dateKey) {
+function bcv_cache_save(usd, eur, dateKey, eurSrc) {
   try {
-    const data = { key: dateKey || bcv_today_key(), usd: usd, eur: eur, ts: Date.now() };
+    const data = { key: dateKey || bcv_today_key(), usd: usd, eur: eur, eurSrc: eurSrc || '', ts: Date.now() };
     localStorage.setItem('bcv_daily_cache', JSON.stringify(data));
   } catch(e) {}
 }
@@ -1841,7 +1875,10 @@ function bcv_cache_load() {
     // Si el euro guardado es absurdo (ej: 1,01 en vez de 1.006), descartar la
     // caché para que se vuelva a consultar y se corrija sola.
     if (!eurEsValido(eur, usd)) return null;
-    return { usd: usd, eur: eur };
+    // Euro aproximado (cálculo de respaldo) → no es definitivo: volver a intentar
+    // obtener el oficial en la próxima actualización.
+    if (data.eurSrc === 'aprox') return null;
+    return { usd: usd, eur: eur, eurSrc: data.eurSrc || '' };
   } catch(e) { return null; }
 }
 
@@ -1920,10 +1957,10 @@ async function fetchRates(){
         // Usar caché del día (también asegurarse de que esté en el historial)
         history_save_entry(bcv_today_key(), cachedBCV.usd, cachedBCV.eur);
         console.log('[BCV Cache] Usando caché de hoy (' + bcv_today_key() + '):', cachedBCV.usd, cachedBCV.eur);
-        return { usd: cachedBCV.usd, eur: cachedBCV.eur };
+        return { usd: cachedBCV.usd, eur: cachedBCV.eur, eurSrc: cachedBCV.eurSrc };
       }
 
-      let usd = NaN, eur = NaN;
+      let usd = NaN, eur = NaN, eurSrc = '';
 
       // Fuente 1 (principal): DolarAPI — filtra correctamente la tasa vigente hoy,
       // aunque el BCV ya haya publicado en su web el precio del día siguiente (~4 pm)
@@ -1951,8 +1988,8 @@ async function fetchRates(){
       // Para el euro se toma la primera fuente cuyo valor sea coherente con el USD.
       // Antes se aceptaba cualquier número > 0, y un valor mal formateado
       // (1,006 en lugar de 1.006,03) terminaba mostrándose como "1,01".
-      if (eurEsValido(dApiEur, usd))        eur = dApiEur;
-      else if (eurEsValido(dvzla.eur, usd)) eur = dvzla.eur;
+      if (eurEsValido(dApiEur, usd))        { eur = dApiEur;   eurSrc = 'api'; }
+      else if (eurEsValido(dvzla.eur, usd)) { eur = dvzla.eur; eurSrc = 'api'; }
       else if (isFinite(dApiEur) || isFinite(dvzla.eur)) {
         console.warn('[BCV] EUR descartado por incoherente:', dApiEur, dvzla.eur, 'USD:', usd);
       }
@@ -1962,12 +1999,24 @@ async function fetchRates(){
       // que solo se consulta cuando realmente hace falta, no siempre.
       if (!isFinite(usd) || !isFinite(eur)) {
         console.log('[BCV] Fuentes rápidas incompletas, consultando bcv.org.ve directo...');
-        const html = await fetchHTML('https://www.bcv.org.ve/');
-        if (html) {
-          const bcv = parseBCVHtml(html);
-          console.log('[BCV Directo fallback]', bcv);
-          if (!isFinite(usd) && isFinite(bcv.usd)) usd = bcv.usd;
-          if (!isFinite(eur) && eurEsValido(bcv.eur, usd)) eur = bcv.eur;
+        const bcv = await fetchBCVRates();
+        console.log('[BCV Directo fallback]', bcv);
+        if (bcv) {
+          // Solo usar el euro del BCV si su USD coincide con el de hoy (después de
+          // las ~4pm la web del BCV ya muestra la tasa del día siguiente).
+          const mismoDia = !isFinite(usd) || Math.abs(bcv.usd - usd) < 0.01;
+          if (!isFinite(usd)) usd = bcv.usd;
+          if (!isFinite(eur) && mismoDia && eurEsValido(bcv.eur, usd)) { eur = bcv.eur; eurSrc = 'bcv'; }
+        }
+      }
+
+      // Rescate: si la API mandó el euro dividido entre 1000 (ej: 1.00603263992)
+      // pero con suficientes decimales, multiplicar por 1000 da el valor exacto.
+      if (!isFinite(eur)) {
+        for (const raw of [dApiEur, dvzla.eur]) {
+          if (!isFinite(raw)) continue;
+          const dec = (String(raw).split('.')[1] || '').length;
+          if (dec >= 5 && eurEsValido(raw * 1000, usd)) { eur = raw * 1000; eurSrc = 'api'; break; }
         }
       }
 
@@ -1980,17 +2029,17 @@ async function fetchRates(){
           const fx2 = await fetchJSON('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
           if (fx2) eurUsd = parseFloat(fx2?.eur?.usd);
         }
-        if (isFinite(eurUsd) && eurUsd > 0) eur = usd * eurUsd;
+        if (isFinite(eurUsd) && eurUsd > 0) { eur = usd * eurUsd; eurSrc = 'aprox'; }
       }
 
       // Guardar en caché diaria e historial si conseguimos al menos el USD
       if (isFinite(usd)) {
-        bcv_cache_save(usd, eur);
+        bcv_cache_save(usd, eur, null, eurSrc);
         history_save_entry(bcv_today_key(), usd, eur);
         console.log('[BCV Cache] Guardado para hoy (' + bcv_today_key() + '):', usd, eur);
       }
 
-      return { usd, eur };
+      return { usd, eur, eurSrc };
     }
 
     async function resolveParalelo() {
@@ -2052,6 +2101,8 @@ async function fetchRates(){
     // --- Aplicar valores al DOM ---
     if (isFinite(usdBcv)) qs('tasa_bcv').value = usdBcv.toFixed(2);
     if (isFinite(eurBcv)) qs('tasa_euro_bcv').value = eurBcv.toFixed(2);
+    const chipEur = qs('chip_eur_source');
+    if (chipEur) chipEur.textContent = bcvResult.eurSrc === 'aprox' ? '€: aproximado' : (bcvResult.eurSrc === 'bcv' ? '€: BCV directo' : '€: BCV');
     if (isFinite(parRate)) qs('tasa_paralelo').value = parRate.toFixed(2);
 
     // Actualizar timestamp general y UI sólo si hubo algún fetch real
@@ -2212,7 +2263,7 @@ syncHeroCards();
 //  PWA VERSIONING SYSTEM (mismo patrón que GestioMada)
 // ============================================================
 (function(){
-  const APP_VERSION = 'v1_22';
+  const APP_VERSION = 'v1_23';
   const btnCheck = document.getElementById('btn_pwa_check_updates');
   const btnApply = document.getElementById('btn_pwa_apply_update');
   const statusEl = document.getElementById('pwa_update_status');
