@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-app-version="DivisasBCV_v1_21">
+<html lang="es" data-app-version="DivisasBCV_v1_22">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
@@ -1597,7 +1597,7 @@ function history_save_entry(dateKey, usd, eur) {
     let arr = history_load();
     // Quitar entrada existente de esa fecha si la hay
     arr = arr.filter(e => e.date !== dateKey);
-    arr.push({ date: dateKey, usd: usd, eur: isFinite(eur) ? eur : null });
+    arr.push({ date: dateKey, usd: usd, eur: eurEsValido(eur, usd) ? eur : null });
     // Ordenar descendente y recortar a 7
     arr.sort((a, b) => b.date.localeCompare(a.date));
     arr = arr.slice(0, HISTORY_MAX);
@@ -1628,7 +1628,7 @@ function history_render() {
       ? `<strong>Hoy</strong> · ${dayName} ${d}/${m}`
       : `${dayName} ${d}/${m}`;
     const usdTxt = e.usd ? Number(e.usd).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
-    const eurTxt = e.eur ? Number(e.eur).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+    const eurTxt = (e.eur && eurEsValido(Number(e.eur), Number(e.usd))) ? Number(e.eur).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
     return `<tr class="${isToday ? 'today-row' : ''}">
       <td>${label}</td>
       <td>${usdTxt}</td>
@@ -1838,8 +1838,29 @@ function bcv_cache_load() {
     const usd = parseFloat(data.usd);
     const eur = parseFloat(data.eur);
     if (!isFinite(usd) || usd <= 0) return null;
-    return { usd: usd, eur: isFinite(eur) && eur > 0 ? eur : NaN };
+    // Si el euro guardado es absurdo (ej: 1,01 en vez de 1.006), descartar la
+    // caché para que se vuelva a consultar y se corrija sola.
+    if (!eurEsValido(eur, usd)) return null;
+    return { usd: usd, eur: eur };
   } catch(e) { return null; }
+}
+
+// Convierte lo que venga de una API a número. Si llega como texto con formato
+// venezolano ("1.006,03") parseFloat daría 1.006 → por eso se usa parseVE.
+function toRate(v) {
+  if (typeof v === 'number') return (isFinite(v) && v > 0) ? v : NaN;
+  if (v === null || v === undefined) return NaN;
+  const n = parseVE(v);
+  return (isFinite(n) && n > 0) ? n : NaN;
+}
+
+// El euro BCV siempre vale un poco más que el dólar BCV (EUR/USD ronda 1,0–1,3).
+// Si la proporción se sale de un rango amplio (0,8–1,6), el dato está mal.
+function eurEsValido(eur, usd) {
+  if (!isFinite(eur) || eur <= 0) return false;
+  if (!isFinite(usd) || usd <= 0) return true; // sin USD no se puede comparar
+  const ratio = eur / usd;
+  return ratio > 0.8 && ratio < 1.6;
 }
 
 async function fetchRates(){
@@ -1907,31 +1928,34 @@ async function fetchRates(){
       // Fuente 1 (principal): DolarAPI — filtra correctamente la tasa vigente hoy,
       // aunque el BCV ya haya publicado en su web el precio del día siguiente (~4 pm)
       const pDolarAPIusd = fetchJSON('https://ve.dolarapi.com/v1/dolares/oficial').then(d => {
-        const v = parseFloat(d?.promedio ?? d?.venta);
-        return isFinite(v) && v > 0 ? v : NaN;
+        return toRate(d?.promedio ?? d?.venta);
       }).catch(() => NaN);
 
       const pDolarAPIeur = fetchJSON('https://ve.dolarapi.com/v1/euros/oficial').then(d => {
-        const v = parseFloat(d?.promedio ?? d?.venta);
-        return isFinite(v) && v > 0 ? v : NaN;
+        return toRate(d?.promedio ?? d?.venta);
       }).catch(() => NaN);
 
       // Fuente 2 (fallback): DolarVZLA API (USD + EUR)
       const pDolarVZLA = fetchJSON('https://api.dolarvzla.com/public/exchange-rate').then(j => {
-        const u = parseFloat(j?.current?.usd);
-        const e = parseFloat(j?.current?.eur);
-        return { usd: isFinite(u) && u > 0 ? u : NaN, eur: isFinite(e) && e > 0 ? e : NaN };
+        return { usd: toRate(j?.current?.usd), eur: toRate(j?.current?.eur) };
       }).catch(() => ({ usd: NaN, eur: NaN }));
 
       // Esperar solo las fuentes rápidas primero (normalmente responden en <2s)
       const [dApiUsd, dApiEur, dvzla] = await Promise.all([pDolarAPIusd, pDolarAPIeur, pDolarVZLA]);
+      console.log('[BCV] Fuentes rápidas →', { dApiUsd, dApiEur, dvzla });
 
       // Prioridad: DolarAPI > DolarVZLA
       if (isFinite(dApiUsd))        usd = dApiUsd;
       else if (isFinite(dvzla.usd)) usd = dvzla.usd;
 
-      if (isFinite(dApiEur))        eur = dApiEur;
-      else if (isFinite(dvzla.eur)) eur = dvzla.eur;
+      // Para el euro se toma la primera fuente cuyo valor sea coherente con el USD.
+      // Antes se aceptaba cualquier número > 0, y un valor mal formateado
+      // (1,006 en lugar de 1.006,03) terminaba mostrándose como "1,01".
+      if (eurEsValido(dApiEur, usd))        eur = dApiEur;
+      else if (eurEsValido(dvzla.eur, usd)) eur = dvzla.eur;
+      else if (isFinite(dApiEur) || isFinite(dvzla.eur)) {
+        console.warn('[BCV] EUR descartado por incoherente:', dApiEur, dvzla.eur, 'USD:', usd);
+      }
 
       // Fuente 3 (último recurso, solo si las rápidas no dieron resultado):
       // scraping directo bcv.org.ve. Es más lento (necesita proxy CORS), así
@@ -1943,7 +1967,7 @@ async function fetchRates(){
           const bcv = parseBCVHtml(html);
           console.log('[BCV Directo fallback]', bcv);
           if (!isFinite(usd) && isFinite(bcv.usd)) usd = bcv.usd;
-          if (!isFinite(eur) && isFinite(bcv.eur)) eur = bcv.eur;
+          if (!isFinite(eur) && eurEsValido(bcv.eur, usd)) eur = bcv.eur;
         }
       }
 
@@ -2188,7 +2212,7 @@ syncHeroCards();
 //  PWA VERSIONING SYSTEM (mismo patrón que GestioMada)
 // ============================================================
 (function(){
-  const APP_VERSION = 'v1_21';
+  const APP_VERSION = 'v1_22';
   const btnCheck = document.getElementById('btn_pwa_check_updates');
   const btnApply = document.getElementById('btn_pwa_apply_update');
   const statusEl = document.getElementById('pwa_update_status');
