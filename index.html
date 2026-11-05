@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-app-version="DivisasBCV_v1_23">
+<html lang="es" data-app-version="DivisasBCV_v1_24">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
@@ -1544,7 +1544,27 @@ async function fetchHTML(url, timeoutMs) {
 // Lee bcv.org.ve probando directo y cada proxy CORS hasta obtener un HTML
 // que REALMENTE traiga las tasas (antes bastaba con un HTTP 200, y si el proxy
 // devolvía una página de error se daba por fallido sin probar el siguiente).
+// Función propia en Vercel que lee bcv.org.ve desde el servidor (sin CORS ni proxies).
+// Si cambias el nombre del proyecto en Vercel, actualiza esta dirección.
+const BCV_API_URL = 'https://divisas-bcv-api.vercel.app/api/bcv';
+
+async function fetchBCVApi(timeoutMs = 12000) {
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), timeoutMs);
+    const resp = await fetch(BCV_API_URL, { signal: ctrl.signal, cache: 'no-store' });
+    clearTimeout(tid);
+    if (!resp.ok) return null;
+    const j = await resp.json();
+    const usd = toRate(j?.usd), eur = toRate(j?.eur);
+    if (!isFinite(usd)) return null;
+    return { usd, eur, fechaValor: j?.fechaValor || null, html: null };
+  } catch (e) { return null; }
+}
+
 async function fetchBCVRates(timeoutMs = 10000) {
+  const api = await fetchBCVApi();
+  if (api) return api;
   const url = 'https://www.bcv.org.ve/';
   const intentos = [(u) => u, ...CORS_PROXIES];
   for (const build of intentos) {
@@ -1556,7 +1576,7 @@ async function fetchBCVRates(timeoutMs = 10000) {
       if (!resp.ok) continue;
       const html = await resp.text();
       const r = parseBCVHtml(html);
-      if (isFinite(r.usd)) return { usd: r.usd, eur: r.eur, html: html };
+      if (isFinite(r.usd)) return { usd: r.usd, eur: r.eur, fechaValor: parseBCVFechaValor(html), html: html };
     } catch (e) {}
   }
   return null;
@@ -1701,16 +1721,15 @@ async function history_check_next_rate() {
 
     console.log('[TasaSiguiente] Consultando bcv.org.ve...');
     const bcvNow = await fetchBCVRates();
-    const html = bcvNow ? bcvNow.html : null;
     window.__checking_next_rate = false;
 
-    if (!html) {
+    if (!bcvNow) {
       console.log('[TasaSiguiente] No se pudo obtener el HTML del BCV (proxies fallaron o timeout)');
       render_next_rate_toggle();
       return;
     }
 
-    const scraped = parseBCVHtml(html);
+    const scraped = { usd: bcvNow.usd, eur: bcvNow.eur };
     console.log('[TasaSiguiente] Valor scrapeado del BCV ahora mismo:', scraped);
     if (!isFinite(scraped.usd)) {
       console.log('[TasaSiguiente] No se pudo extraer el USD del HTML scrapeado');
@@ -1723,7 +1742,7 @@ async function history_check_next_rate() {
 
     if (diff > 0.001) {
       // El BCV ya muestra un valor distinto al fijado hoy → es la tasa siguiente
-      const fechaValor = parseBCVFechaValor(html); // puede ser null si no se encuentra el texto
+      const fechaValor = bcvNow.fechaValor; // puede ser null si no se encuentra
       const preview = { date: fechaValor, usd: scraped.usd, eur: scraped.eur, ts: Date.now() };
       localStorage.setItem(NEXT_PREVIEW_KEY, JSON.stringify(preview));
       console.log('[TasaSiguiente] ¡Tasa siguiente detectada y guardada!', preview);
@@ -1977,18 +1996,37 @@ async function fetchRates(){
         return { usd: toRate(j?.current?.usd), eur: toRate(j?.current?.eur) };
       }).catch(() => ({ usd: NaN, eur: NaN }));
 
-      // Esperar solo las fuentes rápidas primero (normalmente responden en <2s)
-      const [dApiUsd, dApiEur, dvzla] = await Promise.all([pDolarAPIusd, pDolarAPIeur, pDolarVZLA]);
-      console.log('[BCV] Fuentes rápidas →', { dApiUsd, dApiEur, dvzla });
+      // Función propia en Vercel (lee el BCV con el valor exacto)
+      const pBcvApi = fetchBCVApi();
 
-      // Prioridad: DolarAPI > DolarVZLA
+      // Esperar las fuentes en paralelo
+      const [dApiUsdRaw, dApiEur, dvzla, bcvApi] = await Promise.all([pDolarAPIusd, pDolarAPIeur, pDolarVZLA, pBcvApi]);
+      console.log('[BCV] Fuentes →', { dApiUsd: dApiUsdRaw, dApiEur, dvzla, bcvApi });
+
+      // DolarAPI tiene un error con el punto de miles (1.006,03 → 1,006). Si su USD
+      // es ~1000 veces menor que el del BCV, se descarta.
+      let dApiUsd = dApiUsdRaw;
+      if (isFinite(dApiUsd) && bcvApi && bcvApi.usd / dApiUsd > 100) {
+        console.warn('[BCV] USD de DolarAPI descartado por error de formato:', dApiUsd);
+        dApiUsd = NaN;
+      }
+      // ¿Lo que muestra el BCV corresponde a HOY? (desde ~4pm muestra el día siguiente)
+      const bcvApiEsHoy = !!bcvApi && (bcvApi.fechaValor ? bcvApi.fechaValor === bcv_today_key()
+                                                         : (isFinite(dApiUsd) && Math.abs(bcvApi.usd - dApiUsd) < 0.01));
+
+      // Prioridad USD: DolarAPI > BCV (si es de hoy) > DolarVZLA
       if (isFinite(dApiUsd))        usd = dApiUsd;
+      else if (bcvApiEsHoy)         usd = bcvApi.usd;
       else if (isFinite(dvzla.usd)) usd = dvzla.usd;
+
+      // Prioridad EUR: BCV (valor exacto, si es de hoy) > APIs
+      if (bcvApiEsHoy && eurEsValido(bcvApi.eur, usd)) { eur = bcvApi.eur; eurSrc = 'bcv'; }
 
       // Para el euro se toma la primera fuente cuyo valor sea coherente con el USD.
       // Antes se aceptaba cualquier número > 0, y un valor mal formateado
       // (1,006 en lugar de 1.006,03) terminaba mostrándose como "1,01".
-      if (eurEsValido(dApiEur, usd))        { eur = dApiEur;   eurSrc = 'api'; }
+      if (isFinite(eur)) { /* ya resuelto con el BCV */ }
+      else if (eurEsValido(dApiEur, usd))        { eur = dApiEur;   eurSrc = 'api'; }
       else if (eurEsValido(dvzla.eur, usd)) { eur = dvzla.eur; eurSrc = 'api'; }
       else if (isFinite(dApiEur) || isFinite(dvzla.eur)) {
         console.warn('[BCV] EUR descartado por incoherente:', dApiEur, dvzla.eur, 'USD:', usd);
@@ -2263,7 +2301,7 @@ syncHeroCards();
 //  PWA VERSIONING SYSTEM (mismo patrón que GestioMada)
 // ============================================================
 (function(){
-  const APP_VERSION = 'v1_23';
+  const APP_VERSION = 'v1_24';
   const btnCheck = document.getElementById('btn_pwa_check_updates');
   const btnApply = document.getElementById('btn_pwa_apply_update');
   const statusEl = document.getElementById('pwa_update_status');
